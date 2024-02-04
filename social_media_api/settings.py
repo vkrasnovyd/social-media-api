@@ -33,6 +33,8 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
+BASE_URL = "http://localhost:8000"
+
 
 # Application definition
 

@@ -3,6 +3,7 @@ import uuid
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.urls import reverse
 from django.utils.text import slugify
 
 
@@ -31,6 +32,9 @@ class Post(models.Model):
 
     def __str__(self):
         return f"Post created by {self.author} at {self.created_at}"
+
+    def get_absolute_url(self):
+        return reverse("feed:post-detail", kwargs={"pk": self.pk})
 
 
 def post_image_file_path(instance, filename) -> str:

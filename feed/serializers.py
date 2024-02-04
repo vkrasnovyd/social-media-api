@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
 from feed.models import Hashtag, Post, PostImage
+from social_media_api import settings
+
+
+def get_full_url(url: str) -> str:
+    return f"{settings.BASE_URL}{url}"
 
 
 class HashtagSerializer(serializers.ModelSerializer):
@@ -25,6 +30,7 @@ class PostListSerializer(serializers.ModelSerializer):
     num_likes = serializers.SerializerMethodField()
     num_comments = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
+    detail_url = serializers.SerializerMethodField(read_only=True)
 
     @staticmethod
     def get_num_likes(instance):
@@ -33,6 +39,10 @@ class PostListSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_num_comments(instance):
         return instance.comments.count()
+
+    @staticmethod
+    def get_detail_url(instance):
+        return get_full_url(instance.get_absolute_url())
 
     class Meta:
         model = Post
@@ -43,4 +53,5 @@ class PostListSerializer(serializers.ModelSerializer):
             "num_likes",
             "num_comments",
             "images",
+            "detail_url",
         )
