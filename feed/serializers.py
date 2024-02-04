@@ -15,6 +15,8 @@ class HashtagSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    hashtags = serializers.StringRelatedField(many=True)
+
     class Meta:
         model = Post
         fields = ("id", "text", "hashtags")
@@ -28,6 +30,7 @@ class PostImageListSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
+    hashtags = serializers.StringRelatedField(many=True)
     num_likes = serializers.SerializerMethodField()
     num_comments = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
@@ -67,6 +70,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
+    hashtags = serializers.StringRelatedField(many=True)
     num_likes = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
