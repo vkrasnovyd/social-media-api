@@ -7,7 +7,7 @@ from django.utils.text import slugify
 
 
 class Hashtag(models.Model):
-    name = models.CharField(max_length=31)
+    name = models.CharField(max_length=31, unique=True)
 
     class Meta:
         ordering = ("name",)
