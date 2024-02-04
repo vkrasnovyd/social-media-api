@@ -27,6 +27,7 @@ class PostImageListSerializer(serializers.ModelSerializer):
 
 
 class PostListSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(many=False)
     num_likes = serializers.SerializerMethodField()
     num_comments = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
@@ -48,6 +49,7 @@ class PostListSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             "id",
+            "author",
             "text",
             "hashtags",
             "num_likes",
@@ -64,6 +66,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(many=False)
     num_likes = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
@@ -74,4 +77,12 @@ class PostDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ("id", "text", "hashtags", "num_likes", "comments", "images")
+        fields = (
+            "id",
+            "author",
+            "text",
+            "hashtags",
+            "num_likes",
+            "comments",
+            "images",
+        )
