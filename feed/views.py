@@ -3,10 +3,10 @@ from rest_framework.viewsets import GenericViewSet
 
 from feed.models import Hashtag, Post
 from feed.serializers import (
-    HashtagSerializer,
     PostSerializer,
     PostListSerializer,
     PostDetailSerializer,
+    HashtagListDetailSerializer,
 )
 
 
@@ -27,7 +27,7 @@ class CreateListRetrieveUpdateViewSet(
 
 class HashtagViewSet(CreateListRetrieveUpdateViewSet):
     queryset = Hashtag.objects.all()
-    serializer_class = HashtagSerializer
+    serializer_class = HashtagListDetailSerializer
 
 
 class PostViewSet(CreateListRetrieveUpdateViewSet):

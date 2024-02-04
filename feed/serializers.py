@@ -1,3 +1,4 @@
+from django.urls import reverse
 from rest_framework import serializers
 
 from feed.models import Hashtag, Post, PostImage, Comment
@@ -12,6 +13,19 @@ class HashtagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hashtag
         fields = ("id", "name")
+
+
+class HashtagListDetailSerializer(serializers.ModelSerializer):
+    posts_list = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_posts_list(instance: Hashtag) -> str:
+        posts_list = get_full_url(reverse("feed:post-list"))
+        return f"{posts_list}?hashtag={instance.name}"
+
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name", "posts_list")
 
 
 class PostSerializer(serializers.ModelSerializer):
