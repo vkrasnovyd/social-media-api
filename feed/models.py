@@ -2,13 +2,23 @@ import os
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
 
 class Hashtag(models.Model):
-    name = models.CharField(max_length=31, unique=True)
+    name = models.CharField(
+        max_length=50,
+        unique=False,
+        validators=[
+            RegexValidator(
+                regex="^[\w]*$",
+                message="Hashtag doesnt comply",
+            )
+        ],
+    )
 
     class Meta:
         ordering = ("name",)
