@@ -1,5 +1,9 @@
+import os
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils.text import slugify
 
 
 class Hashtag(models.Model):
@@ -18,13 +22,33 @@ class Post(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
-    hashtags = models.ManyToManyField(Hashtag, related_name="posts")
 
     class Meta:
         ordering = ("-created_at",)
 
     def __str__(self):
         return f"Post created by {self.author} at {self.created_at}"
+
+
+def post_image_file_path(instance, filename) -> str:
+    _, extension = filename.split(".")
+
+    filename = (
+        f"{slugify(instance.post.author.username)}_"
+        f"{instance.post.created_at.strftime('%Y-%m-%d_%H-%M-%S')}-"
+        f"{uuid.uuid4()}.{extension}"
+    )
+
+    return os.path.join("uploads/posts/", filename)
+
+
+class PostImage(models.Model):
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name="images"
+    )
+    image = models.ImageField(
+        blank=False, null=False, upload_to=post_image_file_path
+    )
 
 
 class Comment(models.Model):
