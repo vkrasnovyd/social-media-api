@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from feed.models import Hashtag, Post, PostImage
+from feed.models import Hashtag, Post, PostImage, Comment
 from social_media_api import settings
 
 
@@ -55,3 +55,23 @@ class PostListSerializer(serializers.ModelSerializer):
             "images",
             "detail_url",
         )
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "author", "text")
+
+
+class PostDetailSerializer(serializers.ModelSerializer):
+    num_likes = serializers.SerializerMethodField()
+    images = PostImageListSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+
+    @staticmethod
+    def get_num_likes(instance):
+        return instance.likes.count()
+
+    class Meta:
+        model = Post
+        fields = ("id", "text", "hashtags", "num_likes", "comments", "images")

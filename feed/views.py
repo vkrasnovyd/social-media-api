@@ -6,6 +6,7 @@ from feed.serializers import (
     HashtagSerializer,
     PostSerializer,
     PostListSerializer,
+    PostDetailSerializer,
 )
 
 
@@ -38,5 +39,8 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return PostListSerializer
+
+        if self.action == "retrieve":
+            return PostDetailSerializer
 
         return PostSerializer
