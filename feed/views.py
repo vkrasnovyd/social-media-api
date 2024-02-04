@@ -1,8 +1,8 @@
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 
-from feed.models import Hashtag
-from feed.serializers import HashtagSerializer
+from feed.models import Hashtag, Post
+from feed.serializers import HashtagSerializer, PostSerializer
 
 
 class CreateListRetrieveUpdateViewSet(
@@ -22,3 +22,11 @@ class CreateListRetrieveUpdateViewSet(
 class HashtagViewSet(CreateListRetrieveUpdateViewSet):
     queryset = Hashtag.objects.all()
     serializer_class = HashtagSerializer
+
+
+class PostViewSet(CreateListRetrieveUpdateViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
