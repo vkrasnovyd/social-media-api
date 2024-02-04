@@ -31,10 +31,25 @@ class HashtagViewSet(CreateListRetrieveUpdateViewSet):
 
 
 class PostViewSet(CreateListRetrieveUpdateViewSet):
-    queryset = Post.objects.all()
-
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        queryset = Post.objects.all()
+
+        if self.action in ["list", "retrieve"]:
+            queryset = queryset.select_related("author").prefetch_related(
+                "hashtags", "likes", "comments", "images"
+            )
+
+        if self.action == "list":
+
+            hashtag = self.request.query_params.get("hashtag", None)
+
+            if hashtag:
+                queryset = queryset.filter(hashtags__name__iexact=hashtag)
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "list":
