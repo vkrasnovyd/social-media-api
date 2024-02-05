@@ -104,3 +104,9 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "comments",
             "images",
         )
+
+
+class PostImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostImage
+        fields = ("id", "image")

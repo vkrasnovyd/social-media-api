@@ -1,4 +1,6 @@
-from rest_framework import mixins
+from rest_framework import mixins, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from feed.models import Hashtag, Post
@@ -7,6 +9,7 @@ from feed.serializers import (
     PostListSerializer,
     PostDetailSerializer,
     HashtagListDetailSerializer,
+    PostImageSerializer,
 )
 
 
@@ -58,4 +61,22 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         if self.action == "retrieve":
             return PostDetailSerializer
 
+        if self.action == "upload_image":
+            return PostImageSerializer
+
         return PostSerializer
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        """Endpoint for uploading pictures to specific post"""
+        post = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save(post=post)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
