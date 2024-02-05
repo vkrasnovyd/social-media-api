@@ -1,9 +1,9 @@
-from rest_framework import mixins, status
+from rest_framework import mixins, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from feed.models import Hashtag, Post
+from feed.models import Hashtag, Post, PostImage
 from feed.serializers import (
     PostSerializer,
     PostListSerializer,
@@ -80,3 +80,10 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         serializer.save(post=post)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ImageDeleteView(generics.DestroyAPIView):
+    """Endpoint for removing an image from post"""
+
+    queryset = PostImage.objects.all()
+    serializer_class = PostImageSerializer

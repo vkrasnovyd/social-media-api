@@ -37,9 +37,17 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostImageListSerializer(serializers.ModelSerializer):
+    delete_image_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_delete_image_url(instance):
+        return get_full_url(
+            reverse("feed:post-image-delete", kwargs={"pk": instance.id})
+        )
+
     class Meta:
         model = PostImage
-        fields = ("id", "image")
+        fields = ("id", "image", "delete_image_url")
 
 
 class PostListSerializer(serializers.ModelSerializer):
