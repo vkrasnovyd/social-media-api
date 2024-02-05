@@ -47,11 +47,17 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
             )
 
         if self.action == "list":
-
             hashtag = self.request.query_params.get("hashtag", None)
+            liked_by_user = self.request.query_params.get(
+                "liked_by_user", None
+            )
 
             if hashtag:
                 queryset = queryset.filter(hashtags__name__iexact=hashtag)
+
+            if liked_by_user == "true":
+                user = self.request.user
+                queryset = queryset.filter(likes__user=user)
 
         return queryset
 
