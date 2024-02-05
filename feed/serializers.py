@@ -72,9 +72,7 @@ class PostListSerializer(serializers.ModelSerializer):
         return get_full_url(instance.get_absolute_url())
 
     def get_has_like_from_user(self, instance):
-        return Like.objects.filter(
-            user=self.context["user"], post=instance
-        ).exists()
+        return instance.id in self.context["post_ids_liked_by_user"]
 
     @staticmethod
     def get_like_toggle(instance):
@@ -124,9 +122,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
         return instance.likes.count()
 
     def get_has_like_from_user(self, instance):
-        return Like.objects.filter(
-            user=self.context["user"], post=instance
-        ).exists()
+        return instance.id in self.context["post_ids_liked_by_user"]
 
     @staticmethod
     def get_like_toggle(instance):

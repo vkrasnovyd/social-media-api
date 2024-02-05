@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics
 from rest_framework.decorators import action
@@ -82,7 +83,11 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         Extra context provided to the serializer class.
         """
         context = super().get_serializer_context()
-        context.update({"user": self.request.user})
+        post_ids_liked_by_user = Like.objects.filter(
+            user=self.request.user
+        ).values_list("post", flat=True)
+
+        context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
         return context
 
     @action(
