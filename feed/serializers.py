@@ -104,6 +104,12 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ("id", "author", "text")
 
 
+class CommentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "text")
+
+
 class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
     hashtags = serializers.StringRelatedField(many=True)

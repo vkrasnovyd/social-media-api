@@ -11,6 +11,7 @@ from feed.serializers import (
     PostDetailSerializer,
     HashtagListDetailSerializer,
     PostImageSerializer,
+    CommentCreateSerializer,
 )
 
 
@@ -71,6 +72,9 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         if self.action == "upload_image":
             return PostImageSerializer
 
+        if self.action == "add_comment":
+            return CommentCreateSerializer
+
         return PostSerializer
 
     def get_serializer_context(self):
@@ -114,6 +118,22 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
             Like.objects.create(user=user, post=post)
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="add-comment",
+    )
+    def add_comment(self, request, pk=None):
+        """Endpoint for creating adding comments to specific post"""
+        author = request.user
+        post = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=author, post=post)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ImageDeleteView(generics.DestroyAPIView):
