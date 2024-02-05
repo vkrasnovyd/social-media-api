@@ -1,7 +1,6 @@
 from django.urls import reverse
 from rest_framework import serializers
-
-from feed.models import Hashtag, Post, PostImage, Comment
+from feed.models import Hashtag, Post, PostImage, Comment, Like
 from social_media_api import settings
 
 
@@ -57,6 +56,8 @@ class PostListSerializer(serializers.ModelSerializer):
     num_comments = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     detail_url = serializers.SerializerMethodField(read_only=True)
+    has_like_from_user = serializers.SerializerMethodField()
+    like_toggle = serializers.SerializerMethodField()
 
     @staticmethod
     def get_num_likes(instance):
@@ -70,6 +71,17 @@ class PostListSerializer(serializers.ModelSerializer):
     def get_detail_url(instance):
         return get_full_url(instance.get_absolute_url())
 
+    def get_has_like_from_user(self, instance):
+        return Like.objects.filter(
+            user=self.context["user"], post=instance
+        ).exists()
+
+    @staticmethod
+    def get_like_toggle(instance):
+        return get_full_url(
+            reverse("feed:post-like", kwargs={"pk": instance.id})
+        )
+
     class Meta:
         model = Post
         fields = (
@@ -81,6 +93,8 @@ class PostListSerializer(serializers.ModelSerializer):
             "num_comments",
             "images",
             "detail_url",
+            "has_like_from_user",
+            "like_toggle",
         )
 
 
@@ -96,10 +110,23 @@ class PostDetailSerializer(serializers.ModelSerializer):
     num_likes = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    has_like_from_user = serializers.SerializerMethodField()
+    like_toggle = serializers.SerializerMethodField()
 
     @staticmethod
     def get_num_likes(instance):
         return instance.likes.count()
+
+    def get_has_like_from_user(self, instance):
+        return Like.objects.filter(
+            user=self.context["user"], post=instance
+        ).exists()
+
+    @staticmethod
+    def get_like_toggle(instance):
+        return get_full_url(
+            reverse("feed:post-like", kwargs={"pk": instance.id})
+        )
 
     class Meta:
         model = Post
@@ -111,6 +138,8 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "num_likes",
             "comments",
             "images",
+            "has_like_from_user",
+            "like_toggle",
         )
 
 

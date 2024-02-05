@@ -1,9 +1,10 @@
+from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from feed.models import Hashtag, Post, PostImage
+from feed.models import Hashtag, Post, PostImage, Like
 from feed.serializers import (
     PostSerializer,
     PostListSerializer,
@@ -66,6 +67,14 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
 
         return PostSerializer
 
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context.update({"user": self.request.user})
+        return context
+
     @action(
         methods=["POST"],
         detail=True,
@@ -80,6 +89,25 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         serializer.save(post=post)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=True,
+        url_path="like",
+    )
+    def like(self, request, pk=None):
+        """Endpoint for adding and removing likes to specific post"""
+        post = self.get_object()
+        user = request.user
+
+        has_like_from_user = Like.objects.filter(user=user, post=post).exists()
+
+        if has_like_from_user:
+            like = Like.objects.get(user=user, post=post)
+            like.delete()
+        else:
+            Like.objects.create(user=user, post=post)
+
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
 
 class ImageDeleteView(generics.DestroyAPIView):
