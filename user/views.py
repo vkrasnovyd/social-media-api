@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Prefetch, Count
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from feed.models import Like
+from feed.models import Like, Post
 from user.models import Follow
 from user.serializers import (
     UserInfoSerializer,
@@ -15,6 +15,11 @@ from user.serializers import (
 class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = get_user_model().objects.all()
+
+        if self.action == "retrieve":
+            queryset = queryset.annotate(
+                num_followers=Count("followers", distinct=True)
+            ).annotate(num_followings=Count("followings", distinct=True))
 
         search_string = self.request.query_params.get("search", None)
         if search_string:
@@ -44,33 +49,20 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
 
-        if self.action == "retrieve":
-            num_followers = self.get_followers(self.get_object()).count()
-            num_followings = self.get_followings(self.get_object()).count()
-
-            context.update({"num_followers": num_followers})
-            context.update({"num_followings": num_followings})
-
         return context
-
-    @staticmethod
-    def get_followers(retrieved_user):
-        """Method for getting QuerySet of user's followers."""
-        follow_relations = Follow.objects.filter(following=retrieved_user)
-        return get_user_model().objects.filter(followings__in=follow_relations)
-
-    @staticmethod
-    def get_followings(retrieved_user):
-        """Method for getting QuerySet of user's followers."""
-        follow_relations = Follow.objects.filter(follower=retrieved_user)
-        return get_user_model().objects.filter(followers__in=follow_relations)
 
     @action(
         methods=["GET"], detail=False, url_path=r"(?P<pk>[^/.]+)/followers"
     )
     def followers(self, request, pk=None):
         """Endpoint for getting a list of user's followers."""
-        followers = self.get_followers(self.get_object())
+        retrieved_user = self.get_object()
+
+        follow_relations = Follow.objects.filter(following=retrieved_user)
+        followers = get_user_model().objects.filter(
+            followings__in=follow_relations
+        )
+
         serializer = UserInfoListSerializer(followers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -79,6 +71,12 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
     )
     def followings(self, request, pk=None):
         """Endpoint for getting a list of user's followings."""
-        followings = self.get_followings(self.get_object())
+        retrieved_user = self.get_object()
+
+        follow_relations = Follow.objects.filter(follower=retrieved_user)
+        followings = get_user_model().objects.filter(
+            followers__in=follow_relations
+        )
+
         serializer = UserInfoListSerializer(followings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

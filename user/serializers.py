@@ -6,17 +6,11 @@ from feed.serializers import get_full_url, PostListSerializer
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
-    num_followers = serializers.SerializerMethodField()
-    num_followings = serializers.SerializerMethodField()
+    num_followers = serializers.IntegerField()
+    num_followings = serializers.IntegerField()
     followers_url = serializers.SerializerMethodField()
     followings_url = serializers.SerializerMethodField()
     posts = PostListSerializer(many=True, read_only=True)
-
-    def get_num_followers(self, instance):
-        return self.context["num_followers"]
-
-    def get_num_followings(self, instance):
-        return self.context["num_followings"]
 
     @staticmethod
     def get_followers_url(instance) -> str:
