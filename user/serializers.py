@@ -10,6 +10,8 @@ class UserInfoSerializer(serializers.ModelSerializer):
     num_followings = serializers.IntegerField()
     followers_url = serializers.SerializerMethodField()
     followings_url = serializers.SerializerMethodField()
+    is_followed_by_user = serializers.SerializerMethodField()
+    follow_toggle = serializers.SerializerMethodField()
     posts = PostListSerializer(many=True, read_only=True)
 
     @staticmethod
@@ -24,6 +26,15 @@ class UserInfoSerializer(serializers.ModelSerializer):
             reverse("user:user-followings", kwargs={"pk": instance.id})
         )
 
+    def get_is_followed_by_user(self, instance) -> bool:
+        return instance.id in self.context.get("followings_ids")
+
+    @staticmethod
+    def get_follow_toggle(instance):
+        return get_full_url(
+            reverse("user:user-follow-toggle", kwargs={"pk": instance.id})
+        )
+
     class Meta:
         model = get_user_model()
         fields = (
@@ -35,6 +46,8 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "num_followings",
             "followers_url",
             "followings_url",
+            "is_followed_by_user",
+            "follow_toggle",
             "posts",
         )
 

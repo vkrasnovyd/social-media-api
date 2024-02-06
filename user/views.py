@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
+from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -50,6 +51,11 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
 
+        if self.action == "retrieve":
+            context["followings_ids"] = Follow.objects.filter(
+                follower=self.request.user
+            ).values_list("following_id", flat=True)
+
         return context
 
     @action(
@@ -81,3 +87,28 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = UserInfoListSerializer(followings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        url_path="follow-toggle",
+    )
+    def follow_toggle(self, request, pk=None):
+        """Endpoint for following and un-following specific user."""
+        retrieved_user = self.get_object()
+        active_user = request.user
+
+        is_followed_by_user = Follow.objects.filter(
+            follower=active_user, following=retrieved_user
+        ).exists()
+
+        if is_followed_by_user:
+            follow_relation = Follow.objects.filter(
+                follower=active_user, following=retrieved_user
+            )
+            follow_relation.delete()
+        else:
+            Follow.objects.create(
+                follower=active_user, following=retrieved_user
+            )
+
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
