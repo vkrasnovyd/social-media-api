@@ -22,6 +22,6 @@ from django.urls import path, include
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
-    path("api/user/", include("user.urls", namespace="user")),
+    path("api/users/", include("user.urls", namespace="user")),
     path("api/feed/", include("feed.urls", namespace="feed")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
