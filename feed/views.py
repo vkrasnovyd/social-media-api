@@ -68,7 +68,7 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         return queryset
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action in ["list", "liked_posts"]:
             return PostListSerializer
 
         if self.action == "retrieve":
@@ -143,6 +143,16 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         serializer.save(author=author, post=post)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(methods=["GET"], detail=False, url_path="liked-posts")
+    def liked_posts(self, request):
+        """Endpoint for getting the list of posts liked by the logged-in user"""
+        user = request.user
+
+        posts = Post.objects.filter(likes__user=user)
+        serializer = self.get_serializer(posts, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ImageDeleteView(generics.DestroyAPIView):
