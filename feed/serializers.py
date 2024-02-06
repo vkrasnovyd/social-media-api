@@ -82,7 +82,7 @@ class PostListSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_like_toggle(instance):
         return get_full_url(
-            reverse("feed:post-like", kwargs={"pk": instance.id})
+            reverse("feed:post-like-toggle", kwargs={"pk": instance.id})
         )
 
     class Meta:
@@ -144,7 +144,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_like_toggle(instance):
         return get_full_url(
-            reverse("feed:post-like", kwargs={"pk": instance.id})
+            reverse("feed:post-like-toggle", kwargs={"pk": instance.id})
         )
 
     class Meta:

@@ -111,10 +111,10 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
 
     @action(
         detail=True,
-        url_path="like",
+        url_path="like-toggle",
     )
-    def like(self, request, pk=None):
-        """Endpoint for adding and removing likes to specific post"""
+    def like_toggle(self, request, pk=None):
+        """Endpoint for adding and removing likes to specific post."""
         post = self.get_object()
         user = request.user
 
