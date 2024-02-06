@@ -1,6 +1,6 @@
 from django.urls import reverse
 from rest_framework import serializers
-from feed.models import Hashtag, Post, PostImage, Comment, Like
+from feed.models import Hashtag, Post, PostImage, Comment
 from social_media_api import settings
 
 
@@ -51,6 +51,7 @@ class PostImageListSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
+    author_url = serializers.SerializerMethodField()
     hashtags = serializers.StringRelatedField(many=True)
     num_likes = serializers.SerializerMethodField()
     num_comments = serializers.SerializerMethodField()
@@ -58,6 +59,10 @@ class PostListSerializer(serializers.ModelSerializer):
     detail_url = serializers.SerializerMethodField(read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
     like_toggle = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_author_url(instance):
+        return get_full_url(instance.author.get_absolute_url())
 
     @staticmethod
     def get_num_likes(instance):
@@ -85,6 +90,7 @@ class PostListSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "author",
+            "author_url",
             "text",
             "hashtags",
             "num_likes",
@@ -97,9 +103,15 @@ class PostListSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_author_url(instance):
+        return get_full_url(instance.author.get_absolute_url())
+
     class Meta:
         model = Comment
-        fields = ("id", "author", "text")
+        fields = ("id", "author", "author_url", "text")
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
@@ -110,12 +122,17 @@ class CommentCreateSerializer(serializers.ModelSerializer):
 
 class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
+    author_url = serializers.SerializerMethodField()
     hashtags = serializers.StringRelatedField(many=True)
     num_likes = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
     like_toggle = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_author_url(instance):
+        return get_full_url(instance.author.get_absolute_url())
 
     @staticmethod
     def get_num_likes(instance):
@@ -135,6 +152,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "author",
+            "author_url",
             "text",
             "hashtags",
             "num_likes",
