@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import viewsets
 
+from feed.models import Like
 from user.serializers import (
     UserInfoSerializer,
     UserInfoListSerializer,
@@ -27,3 +28,15 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
             return UserInfoListSerializer
 
         return UserInfoSerializer
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        post_ids_liked_by_user = Like.objects.filter(
+            user=self.request.user
+        ).values_list("post", flat=True)
+
+        context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
+        return context
