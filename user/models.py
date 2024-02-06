@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
@@ -69,3 +70,15 @@ class User(AbstractUser):
 
     def get_absolute_url(self):
         return reverse("user:user-detail", kwargs={"pk": self.id})
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="followings"
+    )
+    following = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="followers"
+    )
+
+    class Meta:
+        unique_together = ("follower", "following")
