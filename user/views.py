@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Prefetch, Count
+from django.db.models import Q, Count
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from feed.models import Like, Post
+from feed.models import Like
 from user.models import Follow
 from user.serializers import (
     UserInfoSerializer,
@@ -21,13 +21,14 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
                 num_followers=Count("followers", distinct=True)
             ).annotate(num_followings=Count("followings", distinct=True))
 
-        search_string = self.request.query_params.get("search", None)
-        if search_string:
-            queryset = queryset.filter(
-                Q(username__icontains=search_string)
-                | Q(first_name__icontains=search_string)
-                | Q(last_name__icontains=search_string)
-            ).distinct()
+        if self.action == "list":
+            search_string = self.request.query_params.get("search", None)
+            if search_string:
+                queryset = queryset.filter(
+                    Q(username__icontains=search_string)
+                    | Q(first_name__icontains=search_string)
+                    | Q(last_name__icontains=search_string)
+                ).distinct()
 
         return queryset
 
