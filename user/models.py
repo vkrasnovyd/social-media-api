@@ -1,9 +1,13 @@
+import os
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 
@@ -41,6 +45,14 @@ class UserManager(BaseUserManager):
         return self._create_user(email, password, **extra_fields)
 
 
+def profile_image_file_path(instance, filename) -> str:
+    _, extension = filename.split(".")
+
+    filename = f"{slugify(instance.username)}-{uuid.uuid4()}.{extension}"
+
+    return os.path.join("uploads/profile_images/", filename)
+
+
 class User(AbstractUser):
     username_validator = UnicodeUsernameValidator()
 
@@ -59,6 +71,9 @@ class User(AbstractUser):
         error_messages={
             "unique": _("A user with that username already exists."),
         },
+    )
+    profile_image = models.ImageField(
+        blank=True, null=True, upload_to=profile_image_file_path
     )
 
     def __str__(self):

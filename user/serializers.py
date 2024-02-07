@@ -43,6 +43,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "username",
+            "profile_image",
             "first_name",
             "last_name",
             "num_followers",
@@ -64,4 +65,11 @@ class UserInfoListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ("id", "username", "first_name", "last_name", "profile_url")
+        fields = (
+            "id",
+            "username",
+            "profile_image",
+            "first_name",
+            "last_name",
+            "profile_url",
+        )
