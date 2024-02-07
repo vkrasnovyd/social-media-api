@@ -26,11 +26,14 @@ class UserInfoSerializer(serializers.ModelSerializer):
             reverse("user:user-followings", kwargs={"pk": instance.id})
         )
 
-    def get_is_followed_by_user(self, instance) -> bool:
+    def get_is_followed_by_user(self, instance) -> bool | None:
+        if self.context.get("user") == instance:
+            return None
         return instance.id in self.context.get("followings_ids")
 
-    @staticmethod
-    def get_follow_toggle(instance):
+    def get_follow_toggle(self, instance) -> str | None:
+        if self.context.get("user") == instance:
+            return None
         return get_full_url(
             reverse("user:user-follow-toggle", kwargs={"pk": instance.id})
         )

@@ -55,6 +55,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
             context["followings_ids"] = Follow.objects.filter(
                 follower=self.request.user
             ).values_list("following_id", flat=True)
+            context["user"] = self.request.user
 
         return context
 
