@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
 from django.http import HttpResponseRedirect
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -10,6 +10,8 @@ from user.models import Follow
 from user.serializers import (
     UserInfoSerializer,
     UserInfoListSerializer,
+    ManageUserProfileSerializer,
+    ProfileImageSerializer,
 )
 
 
@@ -36,6 +38,9 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return UserInfoListSerializer
+
+        if self.action == "my_profile":
+            return ManageUserProfileSerializer
 
         return UserInfoSerializer
 
@@ -111,5 +116,44 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
             Follow.objects.create(
                 follower=active_user, following=retrieved_user
             )
+
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+
+class ManageUserProfileViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Endpoint for managing basic user info"""
+
+    queryset = get_user_model().objects.all()
+
+    def get_object(self):
+        return self.request.user
+
+    def get_serializer_class(self):
+        if self.action == "upload_image":
+            return ProfileImageSerializer
+
+        return ManageUserProfileSerializer
+
+    @action(methods=["POST"], detail=True, url_path="upload-profile-image")
+    def upload_image(self, request, pk=None):
+        """Endpoint for uploading profile image."""
+        user = self.get_object()
+        serializer = self.get_serializer(user, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, url_path="delete-profile-image")
+    def delete_image(self, request, pk=None):
+        """Endpoint for uploading profile image."""
+        user = self.get_object()
+        user.profile_image = None
+        user.save()
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))

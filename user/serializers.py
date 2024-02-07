@@ -46,6 +46,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "profile_image",
             "first_name",
             "last_name",
+            "bio",
             "num_followers",
             "num_followings",
             "followers_url",
@@ -73,3 +74,36 @@ class UserInfoListSerializer(serializers.ModelSerializer):
             "last_name",
             "profile_url",
         )
+
+
+class ManageUserProfileSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(read_only=True)
+    profile_url = serializers.SerializerMethodField()
+    liked_posts_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_profile_url(instance):
+        return get_full_url(instance.get_absolute_url())
+
+    @staticmethod
+    def get_liked_posts_url(instance):
+        return get_full_url(reverse("feed:post-liked-posts"))
+
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "username",
+            "bio",
+            "profile_image",
+            "profile_url",
+            "liked_posts_url",
+        )
+
+
+class ProfileImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "profile_image")
