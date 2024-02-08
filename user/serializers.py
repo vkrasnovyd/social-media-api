@@ -107,3 +107,15 @@ class ProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ("id", "profile_image")
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "email", "password")
+        read_only_fields = ("id",)
+        extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
+
+    def create(self, validated_data):
+        """Create user with encrypted password."""
+        return get_user_model().objects.create_user(**validated_data)

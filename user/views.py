@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
 from django.http import HttpResponseRedirect
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status, mixins, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -12,6 +12,7 @@ from user.serializers import (
     UserInfoListSerializer,
     ManageUserProfileSerializer,
     ProfileImageSerializer,
+    UserCreateSerializer,
 )
 
 
@@ -160,3 +161,10 @@ class ManageUserProfileViewSet(
         user.save()
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+
+class CreateUserView(generics.CreateAPIView):
+    """Endpoint for registering new users."""
+
+    queryset = get_user_model().objects.all()
+    serializer_class = UserCreateSerializer
