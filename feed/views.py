@@ -70,9 +70,8 @@ class PostViewSet(viewsets.ModelViewSet):
         return PostSerializer
 
     def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
+        """Extra context provided to the serializer class."""
+
         context = super().get_serializer_context()
         post_ids_liked_by_user = Like.objects.filter(
             user=self.request.user
@@ -84,6 +83,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(methods=["POST"], detail=True, url_path="upload_image")
     def upload_image(self, request, pk=None):
         """Endpoint for uploading pictures to specific post."""
+
         post = self.get_object()
         serializer = self.get_serializer(data=request.data)
 
@@ -94,7 +94,8 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, url_path="like_toggle")
     def like_toggle(self, request, pk=None):
-        """Endpoint for adding and removing likes to specific post."""
+        """Endpoint for adding and removing likes to specific posts."""
+
         post = self.get_object()
         user = request.user
 
@@ -110,7 +111,8 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(methods=["POST"], detail=True, url_path="add_comment")
     def add_comment(self, request, pk=None):
-        """Endpoint for creating adding comments to specific post"""
+        """Endpoint for creating adding comments to specific post."""
+
         author = request.user
         post = self.get_object()
         serializer = self.get_serializer(data=request.data)
@@ -123,6 +125,7 @@ class PostViewSet(viewsets.ModelViewSet):
     @action(methods=["GET"], detail=False, url_path="liked_posts")
     def liked_posts(self, request):
         """Endpoint for getting the list of posts liked by the logged-in user."""
+
         user = request.user
 
         posts = (
@@ -140,6 +143,7 @@ class PostViewSet(viewsets.ModelViewSet):
         Endpoint for getting the list of posts from the authors
         liked by the logged-in user.
         """
+
         posts = (
             Post.objects.filter(author__followers__follower=self.request.user)
             .select_related("author")

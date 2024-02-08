@@ -16,6 +16,8 @@ from user.serializers import (
 
 
 class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
+    """Endpoint for retrieving basic users' info."""
+
     def get_queryset(self):
         queryset = get_user_model().objects.all()
 
@@ -45,9 +47,8 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         return UserInfoSerializer
 
     def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
+        """Extra context provided to the serializer class."""
+
         context = super().get_serializer_context()
 
         post_ids_liked_by_user = Like.objects.filter(
@@ -125,7 +126,7 @@ class ManageUserProfileViewSet(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
-    """Endpoint for managing basic user info"""
+    """Endpoint where logged-in user can manage their personal information."""
 
     queryset = get_user_model().objects.all()
 
@@ -140,7 +141,8 @@ class ManageUserProfileViewSet(
 
     @action(methods=["POST"], detail=True, url_path="upload-profile-image")
     def upload_image(self, request, pk=None):
-        """Endpoint for uploading profile image."""
+        """Endpoint where logged-in user can upload their new profile image."""
+
         user = self.get_object()
         serializer = self.get_serializer(user, data=request.data)
 
@@ -151,7 +153,8 @@ class ManageUserProfileViewSet(
 
     @action(detail=True, url_path="delete-profile-image")
     def delete_image(self, request, pk=None):
-        """Endpoint for uploading profile image."""
+        """Endpoint where logged-in user can delete their own profile image."""
+
         user = self.get_object()
         user.profile_image = None
         user.save()
