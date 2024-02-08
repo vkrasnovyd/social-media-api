@@ -119,3 +119,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create user with encrypted password."""
         return get_user_model().objects.create_user(**validated_data)
+
+
+class UserChangePasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(style={"input_type": "password"})
+    new_password = serializers.CharField(style={"input_type": "password"})
+
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "old_password", "new_password")
+        read_only_fields = ("id",)

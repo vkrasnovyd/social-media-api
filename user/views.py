@@ -13,6 +13,7 @@ from user.serializers import (
     ManageUserProfileSerializer,
     ProfileImageSerializer,
     UserCreateSerializer,
+    UserChangePasswordSerializer,
 )
 
 
@@ -138,6 +139,9 @@ class ManageUserProfileViewSet(
         if self.action == "upload_image":
             return ProfileImageSerializer
 
+        if self.action == "change_password":
+            return UserChangePasswordSerializer
+
         return ManageUserProfileSerializer
 
     @action(methods=["POST"], detail=True, url_path="upload-profile-image")
@@ -161,6 +165,24 @@ class ManageUserProfileViewSet(
         user.save()
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+    @action(methods=["POST"], detail=False, url_path="change_password")
+    def change_password(self, request):
+        """Endpoint where logged-in user can change their password."""
+        user = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        if not user.check_password(serializer.data.get("old_password")):
+            return Response(
+                {"old_password": ["Wrong password."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(serializer.data.get("new_password"))
+        user.save()
+
+        return Response("Success.", status=status.HTTP_200_OK)
 
 
 class CreateUserView(generics.CreateAPIView):
