@@ -1,5 +1,5 @@
 from django.http import HttpResponseRedirect
-from rest_framework import mixins, status, generics
+from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -15,29 +15,20 @@ from feed.serializers import (
 )
 
 
-class CreateListRetrieveUpdateViewSet(
+class HashtagViewSet(
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
     mixins.UpdateModelMixin,
     GenericViewSet,
 ):
-    """
-    A viewset that provides default `create()`, `list()`, `retrieve()`,
-    `update()` and `partial_update()` actions.
-    """
-
-    pass
-
-
-class HashtagViewSet(CreateListRetrieveUpdateViewSet):
     """Endpoint for creating, updating and retrieving hashtags."""
 
     queryset = Hashtag.objects.all()
     serializer_class = HashtagListDetailSerializer
 
 
-class PostViewSet(CreateListRetrieveUpdateViewSet):
+class PostViewSet(viewsets.ModelViewSet):
     """Endpoint for creating, updating and retrieving posts."""
 
     def perform_create(self, serializer):
