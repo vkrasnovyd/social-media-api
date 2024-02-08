@@ -100,10 +100,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = UserInfoListSerializer(followings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(
-        detail=True,
-        url_path="follow-toggle",
-    )
+    @action(detail=True, url_path="follow_toggle")
     def follow_toggle(self, request, pk=None):
         """Endpoint for following and un-following specific user."""
         retrieved_user = self.get_object()
@@ -147,7 +144,7 @@ class ManageUserProfileViewSet(
 
         return ManageUserProfileSerializer
 
-    @action(methods=["POST"], detail=True, url_path="upload-profile-image")
+    @action(methods=["POST"], detail=True, url_path="upload_profile_image")
     def upload_image(self, request, pk=None):
         """Endpoint where logged-in user can upload their new profile image."""
 
@@ -159,7 +156,7 @@ class ManageUserProfileViewSet(
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, url_path="delete-profile-image")
+    @action(detail=True, url_path="delete_profile_image")
     def delete_image(self, request, pk=None):
         """Endpoint where logged-in user can delete their own profile image."""
 
