@@ -80,6 +80,7 @@ class ManageUserProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.ImageField(read_only=True)
     profile_url = serializers.SerializerMethodField()
     liked_posts_url = serializers.SerializerMethodField()
+    logout_url = serializers.SerializerMethodField()
 
     @staticmethod
     def get_profile_url(instance):
@@ -88,6 +89,10 @@ class ManageUserProfileSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_liked_posts_url(instance):
         return get_full_url(reverse("feed:post-liked-posts"))
+
+    @staticmethod
+    def get_logout_url(instance):
+        return get_full_url(reverse("user:logout"))
 
     class Meta:
         model = get_user_model()
@@ -100,6 +105,7 @@ class ManageUserProfileSerializer(serializers.ModelSerializer):
             "profile_image",
             "profile_url",
             "liked_posts_url",
+            "logout_url",
         )
 
 

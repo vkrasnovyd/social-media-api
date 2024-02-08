@@ -2,8 +2,11 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
 from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status, mixins, generics
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
+from rest_framework.views import APIView
 
 from feed.models import Like
 from user.models import Follow
@@ -190,3 +193,18 @@ class CreateUserView(generics.CreateAPIView):
 
     queryset = get_user_model().objects.all()
     serializer_class = UserCreateSerializer
+
+
+class CreateTokenView(ObtainAuthToken):
+    """Login endpoint."""
+
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+
+class LogoutAPIView(APIView):
+    """Endpoint for invalidating user token."""
+
+    @staticmethod
+    def get(request):
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
