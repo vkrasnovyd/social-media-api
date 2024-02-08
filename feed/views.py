@@ -1,4 +1,3 @@
-from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics
 from rest_framework.decorators import action
@@ -32,43 +31,40 @@ class CreateListRetrieveUpdateViewSet(
 
 
 class HashtagViewSet(CreateListRetrieveUpdateViewSet):
+    """Endpoint for creating, updating and retrieving hashtags."""
+
     queryset = Hashtag.objects.all()
     serializer_class = HashtagListDetailSerializer
 
 
 class PostViewSet(CreateListRetrieveUpdateViewSet):
+    """Endpoint for creating, updating and retrieving posts."""
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
     def get_queryset(self):
         queryset = Post.objects.all()
 
-        if self.action in ["list", "retrieve"]:
+        if self.action == "retrieve":
+            queryset = queryset.select_related("author").prefetch_related(
+                "hashtags", "likes", "comments__author", "images"
+            )
+
+        if self.action == "list":
             queryset = queryset.select_related("author").prefetch_related(
                 "hashtags", "likes", "comments", "images"
             )
 
-        if self.action == "list":
-            queryset = queryset.filter(
-                author__followers__follower=self.request.user
-            )
-
             hashtag = self.request.query_params.get("hashtag", None)
-            liked_by_user = self.request.query_params.get(
-                "liked_by_user", None
-            )
 
             if hashtag:
                 queryset = queryset.filter(hashtags__name__iexact=hashtag)
 
-            if liked_by_user == "true":
-                user = self.request.user
-                queryset = queryset.filter(likes__user=user)
-
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ["list", "liked_posts"]:
+        if self.action in ["list", "liked_posts", "followed_authors_posts"]:
             return PostListSerializer
 
         if self.action == "retrieve":
@@ -94,13 +90,9 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
         context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
         return context
 
-    @action(
-        methods=["POST"],
-        detail=True,
-        url_path="upload-image",
-    )
+    @action(methods=["POST"], detail=True, url_path="upload_image")
     def upload_image(self, request, pk=None):
-        """Endpoint for uploading pictures to specific post"""
+        """Endpoint for uploading pictures to specific post."""
         post = self.get_object()
         serializer = self.get_serializer(data=request.data)
 
@@ -109,10 +101,7 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(
-        detail=True,
-        url_path="like-toggle",
-    )
+    @action(detail=True, url_path="like_toggle")
     def like_toggle(self, request, pk=None):
         """Endpoint for adding and removing likes to specific post."""
         post = self.get_object()
@@ -128,11 +117,7 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
-    @action(
-        methods=["POST"],
-        detail=True,
-        url_path="add-comment",
-    )
+    @action(methods=["POST"], detail=True, url_path="add_comment")
     def add_comment(self, request, pk=None):
         """Endpoint for creating adding comments to specific post"""
         author = request.user
@@ -144,12 +129,31 @@ class PostViewSet(CreateListRetrieveUpdateViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(methods=["GET"], detail=False, url_path="liked-posts")
+    @action(methods=["GET"], detail=False, url_path="liked_posts")
     def liked_posts(self, request):
-        """Endpoint for getting the list of posts liked by the logged-in user"""
+        """Endpoint for getting the list of posts liked by the logged-in user."""
         user = request.user
 
-        posts = Post.objects.filter(likes__user=user)
+        posts = (
+            Post.objects.filter(likes__user=user)
+            .select_related("author")
+            .prefetch_related("hashtags", "likes", "comments", "images")
+        )
+        serializer = self.get_serializer(posts, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=["GET"], detail=False, url_path="followed_authors_posts")
+    def followed_authors_posts(self, request):
+        """
+        Endpoint for getting the list of posts from the authors
+        liked by the logged-in user.
+        """
+        posts = (
+            Post.objects.filter(author__followers__follower=self.request.user)
+            .select_related("author")
+            .prefetch_related("hashtags", "likes", "comments", "images")
+        )
         serializer = self.get_serializer(posts, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
