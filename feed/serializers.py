@@ -28,11 +28,24 @@ class HashtagListDetailSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    hashtags = serializers.StringRelatedField(many=True)
+    hashtags = HashtagSerializer(many=True, read_only=False, required=False)
 
     class Meta:
         model = Post
         fields = ("id", "text", "hashtags")
+
+    def create(self, validated_data):
+        hashtags_data = validated_data.pop("hashtags")
+        post = Post.objects.create(**validated_data)
+
+        for hashtag in hashtags_data:
+            new_hashtag = Hashtag.objects.get_or_create(
+                name=dict(hashtag).get("name")
+            )
+            post.hashtags.add(new_hashtag[0])
+        post.save()
+
+        return post
 
 
 class PostImageListSerializer(serializers.ModelSerializer):
@@ -103,6 +116,7 @@ class PostListSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField()
     author_url = serializers.SerializerMethodField()
 
     @staticmethod
