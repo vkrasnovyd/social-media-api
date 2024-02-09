@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -21,10 +22,17 @@ from user.serializers import (
 )
 
 
+class Pagination(PageNumberPagination):
+    page_size = 25
+    max_page_size = 100
+    page_size_query_param = "page_size"
+
+
 class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
     """Endpoint for retrieving basic users' info."""
 
     permission_classes = (IsAuthenticated,)
+    pagination_class = Pagination
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
@@ -140,6 +148,7 @@ class ManageUserProfileViewSet(
 
     queryset = get_user_model().objects.all()
     permission_classes = (IsAuthenticated,)
+    pagination_class = Pagination
 
     def get_object(self):
         return self.request.user
