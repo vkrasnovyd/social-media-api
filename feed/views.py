@@ -88,7 +88,12 @@ class PostViewSet(viewsets.ModelViewSet):
 
         context = super().get_serializer_context()
 
-        if self.action in ["retrieve", "list"]:
+        if self.action in [
+            "retrieve",
+            "list",
+            "liked_posts",
+            "followed_authors_posts",
+        ]:
             post_ids_liked_by_user = Like.objects.filter(
                 user=self.request.user
             ).values_list("post", flat=True)
@@ -149,6 +154,10 @@ class PostViewSet(viewsets.ModelViewSet):
             Post.objects.filter(likes__user=user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
+            .annotate(
+                num_likes=Count("likes", distinct=True),
+                num_comments=Count("comments", distinct=True),
+            )
         )
         serializer = self.get_serializer(posts, many=True)
 
@@ -165,6 +174,10 @@ class PostViewSet(viewsets.ModelViewSet):
             Post.objects.filter(author__followers__follower=self.request.user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
+            .annotate(
+                num_likes=Count("likes", distinct=True),
+                num_comments=Count("comments", distinct=True),
+            )
         )
         serializer = self.get_serializer(posts, many=True)
 
