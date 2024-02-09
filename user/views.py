@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
@@ -22,6 +23,8 @@ from user.serializers import (
 
 class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
     """Endpoint for retrieving basic users' info."""
+
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         queryset = get_user_model().objects.all()
@@ -136,6 +139,7 @@ class ManageUserProfileViewSet(
     """Endpoint where logged-in user can manage their personal information."""
 
     queryset = get_user_model().objects.all()
+    permission_classes = (IsAuthenticated,)
 
     def get_object(self):
         return self.request.user
@@ -195,16 +199,20 @@ class CreateUserView(generics.CreateAPIView):
 
     queryset = get_user_model().objects.all()
     serializer_class = UserCreateSerializer
+    permission_classes = (AllowAny,)
 
 
 class CreateTokenView(ObtainAuthToken):
     """Login endpoint."""
 
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    permission_classes = (IsAuthenticated,)
 
 
 class LogoutAPIView(APIView):
     """Endpoint for invalidating user token."""
+
+    permission_classes = (IsAuthenticated,)
 
     @staticmethod
     def get(request):

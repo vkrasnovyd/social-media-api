@@ -3,6 +3,7 @@ from django.db.models import Count
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -15,6 +16,10 @@ from feed.serializers import (
     PostImageSerializer,
     CommentCreateSerializer,
 )
+from social_media_api.permissions import (
+    IsPostAuthorUser,
+    IsPostAuthorOrIsAuthenticatedReadOnly,
+)
 from user.serializers import UserInfoListSerializer
 
 
@@ -22,17 +27,19 @@ class HashtagViewSet(
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
-    mixins.UpdateModelMixin,
     GenericViewSet,
 ):
     """Endpoint for creating, updating and retrieving hashtags."""
 
     queryset = Hashtag.objects.all()
     serializer_class = HashtagListDetailSerializer
+    permission_classes = (IsAuthenticated,)
 
 
 class PostViewSet(viewsets.ModelViewSet):
     """Endpoint for creating, updating and retrieving posts."""
+
+    permission_classes = (IsPostAuthorOrIsAuthenticatedReadOnly,)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -131,7 +138,12 @@ class PostViewSet(viewsets.ModelViewSet):
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
-    @action(methods=["POST"], detail=True, url_path="add_comment")
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="add_comment",
+        permission_classes=[IsAuthenticated],
+    )
     def add_comment(self, request, pk=None):
         """Endpoint for creating adding comments to specific post."""
 
@@ -201,3 +213,4 @@ class ImageDeleteView(generics.DestroyAPIView):
 
     queryset = PostImage.objects.all()
     serializer_class = PostImageSerializer
+    permission_classes = (IsPostAuthorUser,)
