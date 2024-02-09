@@ -87,11 +87,14 @@ class PostViewSet(viewsets.ModelViewSet):
         """Extra context provided to the serializer class."""
 
         context = super().get_serializer_context()
-        post_ids_liked_by_user = Like.objects.filter(
-            user=self.request.user
-        ).values_list("post", flat=True)
 
-        context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
+        if self.action in ["retrieve", "list"]:
+            post_ids_liked_by_user = Like.objects.filter(
+                user=self.request.user
+            ).values_list("post", flat=True)
+
+            context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
+
         return context
 
     @action(methods=["POST"], detail=True, url_path="upload_image")
