@@ -79,9 +79,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         return context
 
-    @action(
-        methods=["GET"], detail=False, url_path=r"(?P<pk>[^/.]+)/followers"
-    )
+    @action(methods=["GET"], detail=True, url_path="followers")
     def followers(self, request, pk=None):
         """Endpoint for getting a list of user's followers."""
         retrieved_user = self.get_object()
@@ -94,9 +92,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = UserInfoListSerializer(followers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=["GET"], detail=False, url_path=r"(?P<pk>[^/.]+)/followings"
-    )
+    @action(methods=["GET"], detail=True, url_path="followings")
     def followings(self, request, pk=None):
         """Endpoint for getting a list of user's followings."""
         retrieved_user = self.get_object()
@@ -175,7 +171,7 @@ class ManageUserProfileViewSet(
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
-    @action(methods=["POST"], detail=False, url_path="change_password")
+    @action(methods=["POST"], detail=True, url_path="change_password")
     def change_password(self, request):
         """Endpoint where logged-in user can change their password."""
         user = self.get_object()
