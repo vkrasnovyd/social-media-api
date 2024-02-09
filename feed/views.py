@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics, viewsets
@@ -14,6 +15,7 @@ from feed.serializers import (
     PostImageSerializer,
     CommentCreateSerializer,
 )
+from user.serializers import UserInfoListSerializer
 
 
 class HashtagViewSet(
@@ -75,6 +77,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "add_comment":
             return CommentCreateSerializer
+
+        if self.action == "users_who_liked":
+            return UserInfoListSerializer
 
         return PostSerializer
 
@@ -159,6 +164,18 @@ class PostViewSet(viewsets.ModelViewSet):
             .prefetch_related("hashtags", "likes", "comments", "images")
         )
         serializer = self.get_serializer(posts, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=["GET"], detail=True, url_path="users_who_liked")
+    def users_who_liked(self, request, pk=None):
+        """
+        Endpoint for getting the list of users who liked the specific post.
+        """
+
+        users_who_liked = get_user_model().objects.filter(likes__post_id=pk)
+
+        serializer = self.get_serializer(users_who_liked, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

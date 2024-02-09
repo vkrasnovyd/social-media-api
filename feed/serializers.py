@@ -135,6 +135,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
     like_toggle = serializers.SerializerMethodField()
+    users_who_liked_url = serializers.SerializerMethodField()
 
     @staticmethod
     def get_author_url(instance):
@@ -147,6 +148,12 @@ class PostDetailSerializer(serializers.ModelSerializer):
     def get_like_toggle(instance):
         return get_full_url(
             reverse("feed:post-like-toggle", kwargs={"pk": instance.id})
+        )
+
+    @staticmethod
+    def get_users_who_liked_url(instance):
+        return get_full_url(
+            reverse("feed:post-users-who-liked", kwargs={"pk": instance.id})
         )
 
     class Meta:
@@ -162,6 +169,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "images",
             "has_like_from_user",
             "like_toggle",
+            "users_who_liked_url",
         )
 
 
