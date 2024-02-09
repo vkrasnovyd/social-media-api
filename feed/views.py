@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.http import HttpResponseRedirect
 from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
@@ -37,14 +38,22 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Post.objects.all()
 
+        if self.action in ["retrieve", "list"]:
+            queryset = queryset.annotate(
+                num_likes=Count("likes", distinct=True)
+            )
+
         if self.action == "retrieve":
             queryset = queryset.select_related("author").prefetch_related(
-                "hashtags", "likes", "comments__author", "images"
+                "hashtags", "comments__author", "images"
             )
 
         if self.action == "list":
+            queryset = queryset.annotate(
+                num_comments=Count("comments", distinct=True)
+            )
             queryset = queryset.select_related("author").prefetch_related(
-                "hashtags", "likes", "comments", "images"
+                "hashtags", "images"
             )
 
             hashtag = self.request.query_params.get("hashtag", None)

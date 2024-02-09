@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
-from feed.models import Like
+from feed.models import Like, Post
 from user.models import Follow
 from user.serializers import (
     UserInfoSerializer,
@@ -27,6 +27,15 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = get_user_model().objects.all()
 
         if self.action == "retrieve":
+            posts = Prefetch(
+                "posts",
+                queryset=Post.objects.annotate(
+                    num_likes=Count("likes", distinct=True),
+                    num_comments=Count("comments", distinct=True),
+                ).prefetch_related("images", "hashtags"),
+            )
+            queryset = queryset.prefetch_related(posts)
+
             queryset = queryset.annotate(
                 num_followers=Count("followers", distinct=True)
             ).annotate(num_followings=Count("followings", distinct=True))

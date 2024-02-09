@@ -66,8 +66,8 @@ class PostListSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
     author_url = serializers.SerializerMethodField()
     hashtags = serializers.StringRelatedField(many=True)
-    num_likes = serializers.SerializerMethodField()
-    num_comments = serializers.SerializerMethodField()
+    num_likes = serializers.IntegerField()
+    num_comments = serializers.IntegerField()
     images = PostImageListSerializer(many=True, read_only=True)
     detail_url = serializers.SerializerMethodField(read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
@@ -76,14 +76,6 @@ class PostListSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
-
-    @staticmethod
-    def get_num_likes(instance):
-        return instance.likes.count()
-
-    @staticmethod
-    def get_num_comments(instance):
-        return instance.comments.count()
 
     @staticmethod
     def get_detail_url(instance):
@@ -138,7 +130,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
     author_url = serializers.SerializerMethodField()
     hashtags = serializers.StringRelatedField(many=True)
-    num_likes = serializers.SerializerMethodField()
+    num_likes = serializers.IntegerField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
@@ -147,10 +139,6 @@ class PostDetailSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
-
-    @staticmethod
-    def get_num_likes(instance):
-        return instance.likes.count()
 
     def get_has_like_from_user(self, instance):
         return instance.id in self.context["post_ids_liked_by_user"]
