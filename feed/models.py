@@ -2,10 +2,12 @@ import os
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.timezone import now
+from rest_framework.exceptions import ValidationError
 
 
 class Hashtag(models.Model):
@@ -36,12 +38,22 @@ class Post(models.Model):
     hashtags = models.ManyToManyField(
         Hashtag, related_name="posts", blank=True
     )
+    published_at = models.DateTimeField(default=now)
+    is_published = models.BooleanField(null=False, blank=False, default=True)
 
     class Meta:
-        ordering = ("-created_at",)
+        ordering = ("-published_at",)
 
     def __str__(self):
-        return f"Post created by {self.author} at {self.created_at}"
+        return f"Post created by {self.author} at {self.published_at}"
+
+    def clean(self, *args, **kwargs):
+        # run the base validation
+        super(Post, self).clean(*args, **kwargs)
+
+        # Don't allow dates older than now.
+        if self.published_at < now():
+            raise ValidationError("Start time must be later than now.")
 
     def get_absolute_url(self):
         return reverse("feed:post-detail", kwargs={"pk": self.pk})
@@ -52,7 +64,7 @@ def post_image_file_path(instance, filename) -> str:
 
     filename = (
         f"{slugify(instance.post.author.username)}_"
-        f"{instance.post.created_at.strftime('%Y-%m-%d_%H-%M-%S')}-"
+        f"{instance.post.published_at.strftime('%Y-%m-%d_%H-%M-%S')}-"
         f"{uuid.uuid4()}.{extension}"
     )
 
