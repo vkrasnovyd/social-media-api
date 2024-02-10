@@ -24,7 +24,9 @@ def api_root(request, format=None):
                     "user:manage-upload-image", request=request, format=format
                 ),
                 "change_password": reverse(
-                    "user:manage-change-password", request=request, format=format
+                    "user:manage-change-password",
+                    request=request,
+                    format=format,
                 ),
             },
             "Retrieving users and posts endpoints": {
@@ -41,6 +43,11 @@ def api_root(request, format=None):
                 ),
                 "hashtags list": reverse(
                     "feed:hashtag-list", request=request, format=format
+                ),
+                "your postponed posts": reverse(
+                    "feed:postponed-post-list",
+                    request=request,
+                    format=format,
                 ),
             },
         }

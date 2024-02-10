@@ -107,6 +107,15 @@ class PostListSerializer(serializers.ModelSerializer):
         )
 
 
+class PostponedPostListSerializer(serializers.ModelSerializer):
+    hashtags = HashtagSerializer(many=True, read_only=True)
+    images = PostImageListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ("id", "published_at", "text", "hashtags", "images")
+
+
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
     author_url = serializers.SerializerMethodField()

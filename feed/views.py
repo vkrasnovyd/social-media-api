@@ -16,6 +16,7 @@ from feed.serializers import (
     HashtagListDetailSerializer,
     PostImageSerializer,
     CommentCreateSerializer,
+    PostponedPostListSerializer,
 )
 from social_media_api.permissions import (
     IsPostAuthorUser,
@@ -56,28 +57,36 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Post.objects.all()
 
-        if self.action in ["retrieve", "list"]:
-            queryset = queryset.annotate(
-                num_likes=Count("likes", distinct=True)
-            )
+        if self.action == "my_postponed_posts":
+            queryset = queryset.filter(is_published=False).order_by(
+                "published_at"
+            ).prefetch_related("hashtags", "images")
 
-        if self.action == "retrieve":
-            queryset = queryset.select_related("author").prefetch_related(
-                "hashtags", "comments__author", "images"
-            )
+        else:
+            queryset = queryset.filter(is_published=True)
 
-        if self.action == "list":
-            queryset = queryset.annotate(
-                num_comments=Count("comments", distinct=True)
-            )
-            queryset = queryset.select_related("author").prefetch_related(
-                "hashtags", "images"
-            )
+            if self.action in ["retrieve", "list"]:
+                queryset = queryset.annotate(
+                    num_likes=Count("likes", distinct=True)
+                )
 
-            hashtag = self.request.query_params.get("hashtag", None)
+            if self.action == "retrieve":
+                queryset = queryset.select_related("author").prefetch_related(
+                    "hashtags", "comments__author", "images"
+                )
 
-            if hashtag:
-                queryset = queryset.filter(hashtags__name__iexact=hashtag)
+            if self.action == "list":
+                queryset = queryset.annotate(
+                    num_comments=Count("comments", distinct=True)
+                )
+                queryset = queryset.select_related("author").prefetch_related(
+                    "hashtags", "images"
+                )
+
+                hashtag = self.request.query_params.get("hashtag", None)
+
+                if hashtag:
+                    queryset = queryset.filter(hashtags__name__iexact=hashtag)
 
         return queryset
 
@@ -96,6 +105,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "users_who_liked":
             return UserInfoListSerializer
+
+        if self.action == "my_postponed_posts":
+            return PostponedPostListSerializer
 
         return PostSerializer
 
@@ -213,6 +225,17 @@ class PostViewSet(viewsets.ModelViewSet):
         users_who_liked = get_user_model().objects.filter(likes__post_id=pk)
 
         serializer = self.get_serializer(users_who_liked, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=["GET"], detail=False, url_path="my_postponed_posts")
+    def my_postponed_posts(self, request):
+        """
+        Endpoint for getting the list of postponed posts.
+        """
+
+        posts = self.get_queryset().filter(author=request.user)
+        serializer = self.get_serializer(posts, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

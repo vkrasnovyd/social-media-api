@@ -40,10 +40,12 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == "retrieve":
             posts = Prefetch(
                 "posts",
-                queryset=Post.objects.annotate(
+                queryset=Post.objects.filter(is_published=True)
+                .annotate(
                     num_likes=Count("likes", distinct=True),
                     num_comments=Count("comments", distinct=True),
-                ).prefetch_related("images", "hashtags"),
+                )
+                .prefetch_related("images", "hashtags"),
             )
             queryset = queryset.prefetch_related(posts)
 
