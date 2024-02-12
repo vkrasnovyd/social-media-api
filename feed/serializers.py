@@ -1,3 +1,7 @@
+import datetime
+from zoneinfo import ZoneInfo
+
+from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.urls import reverse
 from rest_framework import serializers
@@ -57,11 +61,19 @@ class PostSerializer(serializers.ModelSerializer):
                 setattr(instance, key, value)
 
             # Updating hashtags of posts and removing hashtags without posts
-            new_hashtag_names = set([hashtag["name"] for hashtag in hashtags_data])
-            old_hashtag_names = set(list(instance.hashtags.values_list("name", flat=True)))
+            new_hashtag_names = set(
+                [hashtag["name"] for hashtag in hashtags_data]
+            )
+            old_hashtag_names = set(
+                list(instance.hashtags.values_list("name", flat=True))
+            )
 
-            hashtags_to_add = list(new_hashtag_names.difference(old_hashtag_names))
-            hashtags_to_remove = list(old_hashtag_names.difference(new_hashtag_names))
+            hashtags_to_add = list(
+                new_hashtag_names.difference(old_hashtag_names)
+            )
+            hashtags_to_remove = list(
+                old_hashtag_names.difference(new_hashtag_names)
+            )
 
             for hashtag in hashtags_to_add:
                 new_hashtag = Hashtag.objects.get_or_create(name=hashtag)
@@ -144,10 +156,47 @@ class PostListSerializer(serializers.ModelSerializer):
 class PostponedPostListSerializer(serializers.ModelSerializer):
     hashtags = HashtagSerializer(many=True, read_only=True)
     images = PostImageListSerializer(many=True, read_only=True)
+    detail_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_detail_url(instance):
+        return get_full_url(
+            reverse("feed:postponed-post-detail", kwargs={"pk": instance.id})
+        )
 
     class Meta:
         model = Post
-        fields = ("id", "published_at", "text", "hashtags", "images")
+        fields = (
+            "id",
+            "published_at",
+            "text",
+            "hashtags",
+            "images",
+            "detail_url",
+        )
+
+
+class PostponedPostDetailSerializer(PostSerializer):
+    hashtags = HashtagSerializer(many=True, read_only=False, required=False)
+
+    class Meta:
+        model = Post
+        fields = ("id", "text", "hashtags", "published_at")
+
+    def create(self, validated_data):
+        time_now = datetime.datetime.now(ZoneInfo("Europe/Berlin"))
+        published_at = validated_data["published_at"]
+
+        if published_at > time_now:
+            post = super(PostSerializer, self).create(validated_data)
+
+            post.is_published = False
+            post.save()
+
+            return post
+
+        else:
+            raise BadRequest("Publishing time should be greater than now.")
 
 
 class CommentSerializer(serializers.ModelSerializer):

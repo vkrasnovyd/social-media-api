@@ -2,7 +2,7 @@ import os
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator, MinValueValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
@@ -57,6 +57,15 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         return reverse("feed:post-detail", kwargs={"pk": self.pk})
+
+    def publish(self):
+        if self.is_published:
+            raise ValidationError("Post is already published.")
+
+        self.is_published = True
+        self.published_at = now()
+
+        self.save()
 
 
 def post_image_file_path(instance, filename) -> str:

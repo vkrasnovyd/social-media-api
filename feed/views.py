@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -17,6 +18,7 @@ from feed.serializers import (
     PostImageSerializer,
     CommentCreateSerializer,
     PostponedPostListSerializer,
+    PostponedPostDetailSerializer,
 )
 from social_media_api.permissions import (
     IsPostAuthorUser,
@@ -46,7 +48,7 @@ class HashtagViewSet(
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    """Endpoint for creating, updating and retrieving posts."""
+    """Endpoint for creating, updating, retrieving and deleting posts."""
 
     permission_classes = (IsPostAuthorOrIsAuthenticatedReadOnly,)
     pagination_class = Pagination
@@ -55,38 +57,30 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        queryset = Post.objects.all()
+        queryset = Post.objects.filter(is_published=True)
 
-        if self.action == "my_postponed_posts":
-            queryset = queryset.filter(is_published=False).order_by(
-                "published_at"
-            ).prefetch_related("hashtags", "images")
+        if self.action in ["retrieve", "list"]:
+            queryset = queryset.annotate(
+                num_likes=Count("likes", distinct=True)
+            )
 
-        else:
-            queryset = queryset.filter(is_published=True)
+        if self.action == "retrieve":
+            queryset = queryset.select_related("author").prefetch_related(
+                "hashtags", "comments__author", "images"
+            )
 
-            if self.action in ["retrieve", "list"]:
-                queryset = queryset.annotate(
-                    num_likes=Count("likes", distinct=True)
-                )
+        if self.action == "list":
+            queryset = queryset.annotate(
+                num_comments=Count("comments", distinct=True)
+            )
+            queryset = queryset.select_related("author").prefetch_related(
+                "hashtags", "images"
+            )
 
-            if self.action == "retrieve":
-                queryset = queryset.select_related("author").prefetch_related(
-                    "hashtags", "comments__author", "images"
-                )
+            hashtag = self.request.query_params.get("hashtag", None)
 
-            if self.action == "list":
-                queryset = queryset.annotate(
-                    num_comments=Count("comments", distinct=True)
-                )
-                queryset = queryset.select_related("author").prefetch_related(
-                    "hashtags", "images"
-                )
-
-                hashtag = self.request.query_params.get("hashtag", None)
-
-                if hashtag:
-                    queryset = queryset.filter(hashtags__name__iexact=hashtag)
+            if hashtag:
+                queryset = queryset.filter(hashtags__name__iexact=hashtag)
 
         return queryset
 
@@ -105,9 +99,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "users_who_liked":
             return UserInfoListSerializer
-
-        if self.action == "my_postponed_posts":
-            return PostponedPostListSerializer
 
         return PostSerializer
 
@@ -228,21 +219,44 @@ class PostViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=False, url_path="my_postponed_posts")
-    def my_postponed_posts(self, request):
-        """
-        Endpoint for getting the list of postponed posts.
-        """
-
-        posts = self.get_queryset().filter(author=request.user)
-        serializer = self.get_serializer(posts, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class ImageDeleteView(generics.DestroyAPIView):
-    """Endpoint for removing an image from post"""
+    """Endpoint for removing an image from post."""
 
     queryset = PostImage.objects.all()
     serializer_class = PostImageSerializer
     permission_classes = (IsPostAuthorUser,)
+
+
+class PostponedPostViewSet(viewsets.ModelViewSet):
+    """Endpoint for creating, updating, retrieving and deleting postponed posts."""
+
+    permission_classes = (IsPostAuthorUser,)
+    pagination_class = Pagination
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        queryset = Post.objects.filter(
+            is_published=False, author=self.request.user
+        ).order_by("published_at")
+
+        if self.action == "list":
+            queryset = queryset.prefetch_related("hashtags", "images")
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return PostponedPostListSerializer
+
+        return PostponedPostDetailSerializer
+
+    @action(detail=True, url_path="publish_now")
+    def publish_now(self, request, pk=None):
+        post = self.get_object()
+
+        post.publish()
+
+        return HttpResponseRedirect(reverse("feed:postponed-post-list"))
