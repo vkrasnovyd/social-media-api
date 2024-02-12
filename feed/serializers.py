@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.urls import reverse
 from rest_framework import serializers
 from feed.models import Hashtag, Post, PostImage, Comment
@@ -46,6 +47,39 @@ class PostSerializer(serializers.ModelSerializer):
         post.save()
 
         return post
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            hashtags_data = validated_data.pop("hashtags")
+
+            # Updating own fields of Post instance
+            for key, value in validated_data.items():
+                setattr(instance, key, value)
+
+            # Updating hashtags of posts and removing hashtags without posts
+            new_hashtag_names = set([hashtag["name"] for hashtag in hashtags_data])
+            old_hashtag_names = set(list(instance.hashtags.values_list("name", flat=True)))
+
+            hashtags_to_add = list(new_hashtag_names.difference(old_hashtag_names))
+            hashtags_to_remove = list(old_hashtag_names.difference(new_hashtag_names))
+
+            for hashtag in hashtags_to_add:
+                new_hashtag = Hashtag.objects.get_or_create(name=hashtag)
+                instance.hashtags.add(new_hashtag[0])
+
+            for hashtag in hashtags_to_remove:
+                old_hashtag = Hashtag.objects.get(name=hashtag)
+                related_posts = old_hashtag.posts.all().exclude(id=instance.id)
+                num_posts = related_posts.count()
+
+                if num_posts == 0:
+                    old_hashtag.delete()
+                else:
+                    instance.hashtags.remove(old_hashtag)
+
+            instance.save()
+
+            return instance
 
 
 class PostImageListSerializer(serializers.ModelSerializer):
