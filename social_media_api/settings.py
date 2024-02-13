@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+
 import os
 
 from dotenv import load_dotenv
@@ -128,6 +129,12 @@ TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 
 USE_TZ = True
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
+CELERY_TIMEZONE = "Europe/Berlin"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
 
 
 # Static files (CSS, JavaScript, Images)
