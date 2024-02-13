@@ -20,6 +20,7 @@ from feed.serializers import (
     PostponedPostListSerializer,
     PostponedPostDetailSerializer,
 )
+from feed.tasks import publish_postponed_post
 from social_media_api.permissions import (
     IsPostAuthorUser,
     IsPostAuthorOrIsAuthenticatedReadOnly,
@@ -235,7 +236,12 @@ class PostponedPostViewSet(viewsets.ModelViewSet):
     pagination_class = Pagination
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        post = serializer.save(author=self.request.user)
+        publish_postponed_post.apply_async((post.id,), eta=post.published_at)
+
+    def perform_update(self, serializer):
+        post = self.get_object()
+        publish_postponed_post.apply_async((post.id,), eta=post.published_at)
 
     def get_queryset(self):
         queryset = Post.objects.filter(
