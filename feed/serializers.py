@@ -40,7 +40,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "hashtags")
 
     def create(self, validated_data):
-        hashtags_data = validated_data.pop("hashtags")
+        hashtags_data = validated_data.pop("hashtags", [])
         post = Post.objects.create(**validated_data)
 
         for hashtag in hashtags_data:
@@ -54,7 +54,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         with transaction.atomic():
-            hashtags_data = validated_data.pop("hashtags")
+            hashtags_data = validated_data.pop("hashtags", [])
 
             # Updating own fields of Post instance
             for key, value in validated_data.items():
