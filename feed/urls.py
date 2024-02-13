@@ -6,6 +6,7 @@ from feed.views import (
     PostViewSet,
     ImageDeleteView,
     PostponedPostViewSet,
+    PostImageUploadView,
 )
 
 router = routers.DefaultRouter()
@@ -21,6 +22,11 @@ urlpatterns = [
         "post_images/<int:pk>/delete/",
         ImageDeleteView.as_view(),
         name="post-image-delete",
+    ),
+    path(
+        "posts/<int:pk>/upload_image/",
+        PostImageUploadView.as_view(),
+        name="post-image-upload",
     ),
 ]
 

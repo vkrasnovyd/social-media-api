@@ -178,10 +178,25 @@ class PostponedPostListSerializer(serializers.ModelSerializer):
 
 class PostponedPostDetailSerializer(PostSerializer):
     hashtags = HashtagSerializer(many=True, read_only=False, required=False)
+    images = PostImageListSerializer(many=True, read_only=True)
+    image_upload_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_image_upload_url(instance):
+        return get_full_url(
+            reverse("feed:post-image-upload", kwargs={"pk": instance.id})
+        )
 
     class Meta:
         model = Post
-        fields = ("id", "text", "hashtags", "published_at")
+        fields = (
+            "id",
+            "published_at",
+            "text",
+            "hashtags",
+            "images",
+            "image_upload_url",
+        )
 
     def create(self, validated_data):
         time_now = datetime.datetime.now(ZoneInfo("Europe/Berlin"))
@@ -223,6 +238,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     author_url = serializers.SerializerMethodField()
     hashtags = serializers.StringRelatedField(many=True)
     num_likes = serializers.IntegerField()
+    image_upload_url = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     has_like_from_user = serializers.SerializerMethodField()
@@ -232,6 +248,12 @@ class PostDetailSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
+
+    @staticmethod
+    def get_image_upload_url(instance):
+        return get_full_url(
+            reverse("feed:post-image-upload", kwargs={"pk": instance.id})
+        )
 
     def get_has_like_from_user(self, instance):
         return instance.id in self.context["post_ids_liked_by_user"]
@@ -258,6 +280,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "hashtags",
             "num_likes",
             "comments",
+            "image_upload_url",
             "images",
             "has_like_from_user",
             "like_toggle",

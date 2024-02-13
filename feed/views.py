@@ -91,9 +91,6 @@ class PostViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return PostDetailSerializer
 
-        if self.action == "upload_image":
-            return PostImageSerializer
-
         if self.action == "add_comment":
             return CommentCreateSerializer
 
@@ -120,18 +117,6 @@ class PostViewSet(viewsets.ModelViewSet):
             context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
 
         return context
-
-    @action(methods=["POST"], detail=True, url_path="upload_image")
-    def upload_image(self, request, pk=None):
-        """Endpoint for uploading pictures to specific post."""
-
-        post = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save(post=post)
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, url_path="like_toggle")
     def like_toggle(self, request, pk=None):
@@ -226,6 +211,21 @@ class ImageDeleteView(generics.DestroyAPIView):
     queryset = PostImage.objects.all()
     serializer_class = PostImageSerializer
     permission_classes = (IsPostAuthorUser,)
+
+
+class PostImageUploadView(generics.CreateAPIView):
+    """Endpoint for removing an image from post."""
+
+    queryset = PostImage.objects.all()
+    serializer_class = PostImageSerializer
+    permission_classes = (IsPostAuthorUser,)
+
+    def perform_create(self, serializer):
+        serializer.save(post=Post.objects.get(id=self.kwargs.get("pk")))
+
+    def post(self, request, *args, **kwargs):
+        self.create(request, *args, **kwargs)
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
 
 class PostponedPostViewSet(viewsets.ModelViewSet):
