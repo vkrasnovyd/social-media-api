@@ -217,7 +217,6 @@ class CreateTokenView(ObtainAuthToken):
     """Login endpoint."""
 
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
-    permission_classes = (IsAuthenticated,)
 
 
 class LogoutAPIView(APIView):
