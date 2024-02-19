@@ -48,7 +48,13 @@ class HashtagViewSet(
     pagination_class = Pagination
 
 
-class PostViewSet(viewsets.ModelViewSet):
+class PostViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
     """Endpoint for creating, updating, retrieving and deleting posts."""
 
     permission_classes = (IsPostAuthorOrIsAuthenticatedReadOnly,)
@@ -60,7 +66,7 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Post.objects.filter(is_published=True)
 
-        if self.action in ["retrieve", "list"]:
+        if self.action == "retrieve":
             queryset = queryset.annotate(
                 num_likes=Count("likes", distinct=True)
             )
@@ -70,23 +76,10 @@ class PostViewSet(viewsets.ModelViewSet):
                 "hashtags", "comments__author", "images"
             )
 
-        if self.action == "list":
-            queryset = queryset.annotate(
-                num_comments=Count("comments", distinct=True)
-            )
-            queryset = queryset.select_related("author").prefetch_related(
-                "hashtags", "images"
-            )
-
-            hashtag = self.request.query_params.get("hashtag", None)
-
-            if hashtag:
-                queryset = queryset.filter(hashtags__name__iexact=hashtag)
-
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ["list", "liked_posts", "followed_authors_posts"]:
+        if self.action in ["liked_posts", "followed_authors_posts"]:
             return PostListSerializer
 
         if self.action == "retrieve":
@@ -107,7 +100,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action in [
             "retrieve",
-            "list",
             "liked_posts",
             "followed_authors_posts",
         ]:
