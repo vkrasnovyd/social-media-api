@@ -158,7 +158,7 @@ class HashtagDetailSerializer(serializers.ModelSerializer):
 
 
 class PostponedPostListSerializer(serializers.ModelSerializer):
-    hashtags = HashtagSerializer(many=True, read_only=True)
+    hashtags = HashtagListSerializer(many=True, read_only=True)
     images = PostImageListSerializer(many=True, read_only=True)
     detail_url = serializers.SerializerMethodField()
 
@@ -181,7 +181,7 @@ class PostponedPostListSerializer(serializers.ModelSerializer):
 
 
 class PostponedPostDetailSerializer(PostSerializer):
-    hashtags = HashtagSerializer(many=True, read_only=False, required=False)
+    hashtags = HashtagListSerializer(many=True, read_only=False, required=False)
     images = PostImageListSerializer(many=True, read_only=True)
     image_upload_url = serializers.SerializerMethodField()
 
@@ -240,7 +240,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
 class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(many=False)
     author_url = serializers.SerializerMethodField()
-    hashtags = serializers.StringRelatedField(many=True)
+    hashtags = HashtagListSerializer(many=True, read_only=True)
     num_likes = serializers.IntegerField()
     image_upload_url = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
