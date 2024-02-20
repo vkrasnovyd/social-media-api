@@ -135,7 +135,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
                 follower=active_user, following=retrieved_user
             )
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
 
 class ManageUserProfileViewSet(

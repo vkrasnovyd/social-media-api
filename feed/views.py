@@ -141,7 +141,7 @@ class PostViewSet(
         else:
             Like.objects.create(user=user, post=post)
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
     @action(
         methods=["POST"],
