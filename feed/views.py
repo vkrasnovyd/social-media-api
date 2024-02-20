@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, BooleanField, When, Case, Value, Prefetch
+from django.db.models import Count, Prefetch, Exists, OuterRef
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from rest_framework import mixins, status, generics, viewsets
@@ -61,10 +61,8 @@ class HashtagViewSet(
                     .annotate(
                         num_likes=Count("likes", distinct=True),
                         num_comments=Count("comments", distinct=True),
-                        has_like_from_user=Case(
-                            When(likes__user=user, then=Value(True)),
-                            default=Value(False),
-                            output_field=BooleanField()
+                        has_like_from_user=Exists(
+                            Like.objects.filter(user=user, post=OuterRef("pk"))
                         ),
                     )
                 )
@@ -103,10 +101,8 @@ class PostViewSet(
 
             queryset = queryset.annotate(
                 num_likes=Count("likes", distinct=True),
-                has_like_from_user=Case(
-                    When(likes__user=user, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField()
+                has_like_from_user=Exists(
+                    Like.objects.filter(user=user, post=OuterRef("pk"))
                 ),
             )
             queryset = queryset.select_related("author").prefetch_related(
@@ -178,10 +174,8 @@ class PostViewSet(
             .annotate(
                 num_likes=Count("likes", distinct=True),
                 num_comments=Count("comments", distinct=True),
-                has_like_from_user=Case(
-                    When(likes__user=user, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField()
+                has_like_from_user=Exists(
+                    Like.objects.filter(user=user, post=OuterRef("pk"))
                 ),
             )
         )
@@ -205,10 +199,8 @@ class PostViewSet(
             .annotate(
                 num_likes=Count("likes", distinct=True),
                 num_comments=Count("comments", distinct=True),
-                has_like_from_user=Case(
-                    When(likes__user=user, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField()
+                has_like_from_user=Exists(
+                    Like.objects.filter(user=user, post=OuterRef("pk"))
                 ),
             )
         )

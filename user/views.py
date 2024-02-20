@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count, Prefetch
+from django.db.models import Q, Count, Prefetch, Exists, OuterRef
 from django.http import HttpResponseRedirect
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -38,12 +38,18 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = get_user_model().objects.all()
 
         if self.action == "retrieve":
+            user = self.request.user
+
             posts = Prefetch(
                 "posts",
                 queryset=Post.objects.filter(is_published=True)
                 .annotate(
                     num_likes=Count("likes", distinct=True),
                     num_comments=Count("comments", distinct=True),
+                    has_like_from_user=Exists(
+                        Like.objects.filter(user=user, post=OuterRef("pk"))
+                    ),
+
                 )
                 .prefetch_related("images", "hashtags"),
             )
@@ -78,16 +84,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         context = super().get_serializer_context()
 
-        post_ids_liked_by_user = Like.objects.filter(
-            user=self.request.user
-        ).values_list("post", flat=True)
-
-        context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
-
         if self.action == "retrieve":
-            context["followings_ids"] = Follow.objects.filter(
-                follower=self.request.user
-            ).values_list("following_id", flat=True)
             context["user"] = self.request.user
 
         return context
