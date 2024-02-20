@@ -19,17 +19,16 @@ class HashtagSerializer(serializers.ModelSerializer):
         fields = ("id", "name")
 
 
-class HashtagListDetailSerializer(serializers.ModelSerializer):
-    posts_list = serializers.SerializerMethodField()
+class HashtagListSerializer(serializers.ModelSerializer):
+    detail_url = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_posts_list(instance: Hashtag) -> str:
-        posts_list = get_full_url(reverse("feed:post-list"))
-        return f"{posts_list}?hashtag={instance.name}"
+    def get_detail_url(instance):
+        return get_full_url(instance.get_absolute_url())
 
     class Meta:
         model = Hashtag
-        fields = ("id", "name", "posts_list")
+        fields = ("id", "name", "detail_url")
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -148,6 +147,14 @@ class PostListSerializer(serializers.ModelSerializer):
             "has_like_from_user",
             "like_toggle",
         )
+
+
+class HashtagDetailSerializer(serializers.ModelSerializer):
+    posts = PostListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name", "posts")
 
 
 class PostponedPostListSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, BooleanField, When, Case, Value
+from django.db.models import Count, BooleanField, When, Case, Value, Prefetch
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from rest_framework import mixins, status, generics, viewsets
@@ -14,7 +14,8 @@ from feed.serializers import (
     PostSerializer,
     PostListSerializer,
     PostDetailSerializer,
-    HashtagListDetailSerializer,
+    HashtagListSerializer,
+    HashtagDetailSerializer,
     PostImageSerializer,
     CommentCreateSerializer,
     PostponedPostListSerializer,
@@ -44,6 +45,39 @@ class HashtagViewSet(
 
     permission_classes = (IsAuthenticated,)
     pagination_class = Pagination
+
+    def get_queryset(self):
+        queryset = Hashtag.objects.all()
+
+        if self.action == "retrieve":
+            user = self.request.user
+
+            posts = Prefetch(
+                "posts",
+                queryset=(
+                    Post.objects.all()
+                    .select_related("author")
+                    .prefetch_related("hashtags", "likes", "comments", "images")
+                    .annotate(
+                        num_likes=Count("likes", distinct=True),
+                        num_comments=Count("comments", distinct=True),
+                        has_like_from_user=Case(
+                            When(likes__user=user, then=Value(True)),
+                            default=Value(False),
+                            output_field=BooleanField()
+                        ),
+                    )
+                )
+            )
+            queryset = queryset.prefetch_related(posts)
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return HashtagDetailSerializer
+
+        return HashtagListSerializer
 
 
 class PostViewSet(

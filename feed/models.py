@@ -25,6 +25,9 @@ class Hashtag(models.Model):
     class Meta:
         ordering = ("name",)
 
+    def get_absolute_url(self):
+        return reverse("feed:hashtag-detail", kwargs={"pk": self.pk})
+
     def __str__(self):
         return self.name
 
