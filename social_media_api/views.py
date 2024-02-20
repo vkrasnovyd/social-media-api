@@ -17,7 +17,10 @@ def api_root(request, format=None):
                 ),
             },
             "Managing own profile endpoints": {
-                "profile": reverse(
+                "view profile and posts": reverse(
+                    "user:user-detail", request=request, format=format, kwargs={"pk": request.user.id}
+                ),
+                "manage profile": reverse(
                     "user:manage-detail", request=request, format=format
                 ),
                 "upload_profile_image": reverse(
@@ -27,6 +30,9 @@ def api_root(request, format=None):
                     "user:manage-change-password",
                     request=request,
                     format=format,
+                ),
+                "create post": reverse(
+                    "feed:post-list", request=request, format=format
                 ),
             },
             "Retrieving users and posts endpoints": {
