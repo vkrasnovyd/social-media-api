@@ -116,7 +116,7 @@ class PostListSerializer(serializers.ModelSerializer):
     num_comments = serializers.IntegerField()
     images = PostImageListSerializer(many=True, read_only=True)
     detail_url = serializers.SerializerMethodField(read_only=True)
-    has_like_from_user = serializers.SerializerMethodField()
+    has_like_from_user = serializers.BooleanField()
     like_toggle = serializers.SerializerMethodField()
 
     @staticmethod
@@ -126,9 +126,6 @@ class PostListSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_detail_url(instance):
         return get_full_url(instance.get_absolute_url())
-
-    def get_has_like_from_user(self, instance):
-        return instance.id in self.context["post_ids_liked_by_user"]
 
     @staticmethod
     def get_like_toggle(instance):
@@ -241,7 +238,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     image_upload_url = serializers.SerializerMethodField()
     images = PostImageListSerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-    has_like_from_user = serializers.SerializerMethodField()
+    has_like_from_user = serializers.BooleanField()
     like_toggle = serializers.SerializerMethodField()
     users_who_liked_url = serializers.SerializerMethodField()
 
@@ -254,9 +251,6 @@ class PostDetailSerializer(serializers.ModelSerializer):
         return get_full_url(
             reverse("feed:post-image-upload", kwargs={"pk": instance.id})
         )
-
-    def get_has_like_from_user(self, instance):
-        return instance.id in self.context["post_ids_liked_by_user"]
 
     @staticmethod
     def get_like_toggle(instance):

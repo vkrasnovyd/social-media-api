@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count
+from django.db.models import Count, BooleanField, When, Case, Value
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from rest_framework import mixins, status, generics, viewsets
@@ -42,8 +42,6 @@ class HashtagViewSet(
 ):
     """Endpoint for creating, updating and retrieving hashtags."""
 
-    queryset = Hashtag.objects.all()
-    serializer_class = HashtagListDetailSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = Pagination
 
@@ -67,11 +65,16 @@ class PostViewSet(
         queryset = Post.objects.filter(is_published=True)
 
         if self.action == "retrieve":
-            queryset = queryset.annotate(
-                num_likes=Count("likes", distinct=True)
-            )
+            user = self.request.user
 
-        if self.action == "retrieve":
+            queryset = queryset.annotate(
+                num_likes=Count("likes", distinct=True),
+                has_like_from_user=Case(
+                    When(likes__user=user, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                ),
+            )
             queryset = queryset.select_related("author").prefetch_related(
                 "hashtags", "comments__author", "images"
             )
@@ -92,24 +95,6 @@ class PostViewSet(
             return UserInfoListSerializer
 
         return PostSerializer
-
-    def get_serializer_context(self):
-        """Extra context provided to the serializer class."""
-
-        context = super().get_serializer_context()
-
-        if self.action in [
-            "retrieve",
-            "liked_posts",
-            "followed_authors_posts",
-        ]:
-            post_ids_liked_by_user = Like.objects.filter(
-                user=self.request.user
-            ).values_list("post", flat=True)
-
-            context.update({"post_ids_liked_by_user": post_ids_liked_by_user})
-
-        return context
 
     @action(detail=True, url_path="like_toggle")
     def like_toggle(self, request, pk=None):
@@ -159,6 +144,11 @@ class PostViewSet(
             .annotate(
                 num_likes=Count("likes", distinct=True),
                 num_comments=Count("comments", distinct=True),
+                has_like_from_user=Case(
+                    When(likes__user=user, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                ),
             )
         )
         serializer = self.get_serializer(posts, many=True)
@@ -172,6 +162,8 @@ class PostViewSet(
         liked by the logged-in user.
         """
 
+        user = self.request.user
+
         posts = (
             Post.objects.filter(author__followers__follower=self.request.user)
             .select_related("author")
@@ -179,6 +171,11 @@ class PostViewSet(
             .annotate(
                 num_likes=Count("likes", distinct=True),
                 num_comments=Count("comments", distinct=True),
+                has_like_from_user=Case(
+                    When(likes__user=user, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                ),
             )
         )
         serializer = self.get_serializer(posts, many=True)
