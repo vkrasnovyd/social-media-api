@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Prefetch, Exists, OuterRef
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -57,7 +59,9 @@ class HashtagViewSet(
                 queryset=(
                     Post.objects.all()
                     .select_related("author")
-                    .prefetch_related("hashtags", "likes", "comments", "images")
+                    .prefetch_related(
+                        "hashtags", "likes", "comments", "images"
+                    )
                     .annotate(
                         num_likes=Count("likes", distinct=True),
                         num_comments=Count("comments", distinct=True),
@@ -65,7 +69,7 @@ class HashtagViewSet(
                             Like.objects.filter(user=user, post=OuterRef("pk"))
                         ),
                     )
-                )
+                ),
             )
             queryset = queryset.prefetch_related(posts)
 
@@ -76,6 +80,14 @@ class HashtagViewSet(
             return HashtagDetailSerializer
 
         return HashtagListSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+        ]
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(self, request, *args, **kwargs)
 
 
 class PostViewSet(
@@ -220,6 +232,14 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+        ]
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(self, request, *args, **kwargs)
+
 
 class ImageDeleteView(generics.DestroyAPIView):
     """Endpoint for removing an image from post."""
@@ -244,6 +264,11 @@ class PostImageUploadView(generics.CreateAPIView):
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+    ]
+)
 class PostponedPostViewSet(viewsets.ModelViewSet):
     """Endpoint for creating, updating, retrieving and deleting postponed posts."""
 

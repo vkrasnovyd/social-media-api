@@ -4,6 +4,8 @@ from zoneinfo import ZoneInfo
 from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.urls import reverse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from feed.models import Hashtag, Post, PostImage, Comment
 from social_media_api import settings
@@ -23,6 +25,7 @@ class HashtagListSerializer(serializers.ModelSerializer):
     detail_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_detail_url(instance):
         return get_full_url(instance.get_absolute_url())
 
@@ -97,6 +100,7 @@ class PostImageListSerializer(serializers.ModelSerializer):
     delete_image_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_delete_image_url(instance):
         return get_full_url(
             reverse("feed:post-image-delete", kwargs={"pk": instance.id})
@@ -119,14 +123,17 @@ class PostListSerializer(serializers.ModelSerializer):
     like_toggle = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_detail_url(instance):
         return get_full_url(instance.get_absolute_url())
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_like_toggle(instance):
         return get_full_url(
             reverse("feed:post-like-toggle", kwargs={"pk": instance.id})
@@ -163,6 +170,7 @@ class PostponedPostListSerializer(serializers.ModelSerializer):
     detail_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_detail_url(instance):
         return get_full_url(
             reverse("feed:postponed-post-detail", kwargs={"pk": instance.id})
@@ -186,6 +194,7 @@ class PostponedPostDetailSerializer(PostSerializer):
     image_upload_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_image_upload_url(instance):
         return get_full_url(
             reverse("feed:post-image-upload", kwargs={"pk": instance.id})
@@ -223,6 +232,7 @@ class CommentSerializer(serializers.ModelSerializer):
     author_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
 
@@ -250,22 +260,26 @@ class PostDetailSerializer(serializers.ModelSerializer):
     users_who_liked_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_author_url(instance):
         return get_full_url(instance.author.get_absolute_url())
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_image_upload_url(instance):
         return get_full_url(
             reverse("feed:post-image-upload", kwargs={"pk": instance.id})
         )
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_like_toggle(instance):
         return get_full_url(
             reverse("feed:post-like-toggle", kwargs={"pk": instance.id})
         )
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_users_who_liked_url(instance):
         return get_full_url(
             reverse("feed:post-users-who-liked", kwargs={"pk": instance.id})

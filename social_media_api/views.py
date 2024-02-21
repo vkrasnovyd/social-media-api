@@ -1,8 +1,22 @@
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 
+@extend_schema(
+    responses={
+        200: inline_serializer(
+            name="ApiRootResponse",
+            fields={
+                "Auth endpoints": serializers.URLField(),
+                "Managing own profile endpoints": serializers.URLField(),
+                "Retrieving users and posts endpoints": serializers.URLField(),
+            },
+        )
+    }
+)
 @api_view(["GET"])
 def api_root(request, format=None):
     return Response(

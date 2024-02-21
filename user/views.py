@@ -1,6 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count, Prefetch, Exists, OuterRef
 from django.http import HttpResponseRedirect
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    inline_serializer,
+)
 from rest_framework import viewsets, status, mixins, generics
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
@@ -137,6 +143,14 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+        ]
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(self, request, *args, **kwargs)
+
 
 class ManageUserProfileViewSet(
     mixins.RetrieveModelMixin,
@@ -216,6 +230,9 @@ class CreateTokenView(ObtainAuthToken):
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
 
+@extend_schema(
+    responses={200: inline_serializer(name="LogoutResponse", fields={})}
+)
 class LogoutAPIView(APIView):
     """Endpoint for invalidating user token."""
 
