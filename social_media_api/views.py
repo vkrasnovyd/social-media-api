@@ -32,7 +32,10 @@ def api_root(request, format=None):
             },
             "Managing own profile endpoints": {
                 "view profile and posts": reverse(
-                    "user:user-detail", request=request, format=format, kwargs={"pk": request.user.id}
+                    "user:user-detail",
+                    request=request,
+                    format=format,
+                    kwargs={"pk": request.user.id},
                 ),
                 "manage profile": reverse(
                     "user:manage-detail", request=request, format=format

@@ -189,7 +189,9 @@ class PostponedPostListSerializer(serializers.ModelSerializer):
 
 
 class PostponedPostDetailSerializer(PostSerializer):
-    hashtags = HashtagListSerializer(many=True, read_only=False, required=False)
+    hashtags = HashtagListSerializer(
+        many=True, read_only=False, required=False
+    )
     images = PostImageListSerializer(many=True, read_only=True)
     image_upload_url = serializers.SerializerMethodField()
 

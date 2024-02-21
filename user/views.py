@@ -55,7 +55,6 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
                     has_like_from_user=Exists(
                         Like.objects.filter(user=user, post=OuterRef("pk"))
                     ),
-
                 )
                 .prefetch_related("images", "hashtags"),
             )
