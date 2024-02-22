@@ -3,7 +3,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from feed.models import Post
 
 
-class IsPostAuthorOrIsAuthenticatedReadOnly(BasePermission):
+class IsPostAuthorOrIfAuthenticatedReadOnly(BasePermission):
     """
     The request is authenticated as the object author,
     or is a read-only request for authenticated users.
@@ -22,6 +22,10 @@ class IsPostAuthorOrIsAuthenticatedReadOnly(BasePermission):
 
 
 class IsPostAuthorUser(BasePermission):
+    """
+    The request is authenticated as the object author.
+    """
+
     def has_object_permission(self, request, view, obj):
         obj_type = obj.__class__
 

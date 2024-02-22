@@ -27,8 +27,7 @@ from feed.tasks import publish_postponed_post
 from social_media_api.permissions import (
     IsAdminOrIfAuthenticatedReadOnly,
     IsPostAuthorUser,
-    IsPostAuthorOrIsAuthenticatedReadOnly,
-    IsAdminOrReadOnly,
+    IsPostAuthorOrIfAuthenticatedReadOnly,
 )
 from user.serializers import UserInfoListSerializer
 
@@ -101,7 +100,7 @@ class PostViewSet(
 ):
     """Endpoint for creating, updating, retrieving and deleting posts."""
 
-    permission_classes = (IsPostAuthorOrIsAuthenticatedReadOnly,)
+    permission_classes = (IsPostAuthorOrIfAuthenticatedReadOnly,)
     pagination_class = Pagination
 
     def perform_create(self, serializer):
