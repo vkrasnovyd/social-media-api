@@ -25,7 +25,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
-from social_media_api.views import api_root
+from social_media_api.views import ApiRootView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -43,5 +43,5 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
-    path("", api_root, name="root"),
+    path("", ApiRootView.as_view(), name="root"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
