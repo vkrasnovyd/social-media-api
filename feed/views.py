@@ -25,8 +25,10 @@ from feed.serializers import (
 )
 from feed.tasks import publish_postponed_post
 from social_media_api.permissions import (
+    IsAdminOrIfAuthenticatedReadOnly,
     IsPostAuthorUser,
     IsPostAuthorOrIsAuthenticatedReadOnly,
+    IsAdminOrReadOnly,
 )
 from user.serializers import UserInfoListSerializer
 
@@ -38,14 +40,14 @@ class Pagination(PageNumberPagination):
 
 
 class HashtagViewSet(
-    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
     GenericViewSet,
 ):
     """Endpoint for creating, updating and retrieving hashtags."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     pagination_class = Pagination
 
     def get_queryset(self):
