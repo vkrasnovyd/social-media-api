@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from feed.serializers import get_full_url, PostListSerializer
@@ -15,17 +17,20 @@ class UserInfoSerializer(serializers.ModelSerializer):
     posts = PostListSerializer(many=True, read_only=True)
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_followers_url(instance) -> str:
         return get_full_url(
             reverse("user:user-followers", kwargs={"pk": instance.id})
         )
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_followings_url(instance) -> str:
         return get_full_url(
             reverse("user:user-followings", kwargs={"pk": instance.id})
         )
 
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_follow_toggle(self, instance) -> str | None:
         if self.context.get("user") == instance:
             return None
@@ -56,6 +61,7 @@ class UserInfoListSerializer(serializers.ModelSerializer):
     profile_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_profile_url(instance):
         return get_full_url(instance.get_absolute_url())
 
@@ -78,14 +84,17 @@ class ManageUserProfileSerializer(serializers.ModelSerializer):
     logout_url = serializers.SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_TPL)
     def get_profile_url(instance):
         return get_full_url(instance.get_absolute_url())
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_REF)
     def get_liked_posts_url(instance):
         return get_full_url(reverse("feed:post-liked-posts"))
 
     @staticmethod
+    @extend_schema_field(OpenApiTypes.URI_REF)
     def get_logout_url(instance):
         return get_full_url(reverse("user:logout"))
 

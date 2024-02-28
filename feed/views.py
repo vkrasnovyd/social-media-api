@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Prefetch, Exists, OuterRef
+from django.db.models import Count, Prefetch, Exists, OuterRef, QuerySet
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import mixins, status, generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -23,8 +25,9 @@ from feed.serializers import (
 )
 from feed.tasks import publish_postponed_post
 from social_media_api.permissions import (
+    IsAdminOrIfAuthenticatedReadOnly,
     IsPostAuthorUser,
-    IsPostAuthorOrIsAuthenticatedReadOnly,
+    IsPostAuthorOrIfAuthenticatedReadOnly,
 )
 from user.serializers import UserInfoListSerializer
 
@@ -36,14 +39,14 @@ class Pagination(PageNumberPagination):
 
 
 class HashtagViewSet(
-    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
     GenericViewSet,
 ):
     """Endpoint for creating, updating and retrieving hashtags."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     pagination_class = Pagination
 
     def get_queryset(self):
@@ -57,7 +60,9 @@ class HashtagViewSet(
                 queryset=(
                     Post.objects.all()
                     .select_related("author")
-                    .prefetch_related("hashtags", "likes", "comments", "images")
+                    .prefetch_related(
+                        "hashtags", "likes", "comments", "images"
+                    )
                     .annotate(
                         num_likes=Count("likes", distinct=True),
                         num_comments=Count("comments", distinct=True),
@@ -65,7 +70,7 @@ class HashtagViewSet(
                             Like.objects.filter(user=user, post=OuterRef("pk"))
                         ),
                     )
-                )
+                ),
             )
             queryset = queryset.prefetch_related(posts)
 
@@ -77,6 +82,14 @@ class HashtagViewSet(
 
         return HashtagListSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+        ]
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(self, request, *args, **kwargs)
+
 
 class PostViewSet(
     mixins.CreateModelMixin,
@@ -87,7 +100,7 @@ class PostViewSet(
 ):
     """Endpoint for creating, updating, retrieving and deleting posts."""
 
-    permission_classes = (IsPostAuthorOrIsAuthenticatedReadOnly,)
+    permission_classes = (IsPostAuthorOrIfAuthenticatedReadOnly,)
     pagination_class = Pagination
 
     def perform_create(self, serializer):
@@ -126,7 +139,24 @@ class PostViewSet(
 
         return PostSerializer
 
-    @action(detail=True, url_path="like_toggle")
+    def get_annotated_posts_list(self) -> QuerySet[Post]:
+        """Annotates queryset for endpoints with post list."""
+        posts = Post.objects.annotate(
+            num_likes=Count("likes", distinct=True),
+            has_like_from_user=Exists(
+                Like.objects.filter(
+                    user=self.request.user, post=OuterRef("pk")
+                )
+            ),
+            num_comments=Count("comments", distinct=True),
+        )
+        return posts
+
+    @action(
+        detail=True,
+        url_path="like_toggle",
+        permission_classes=[IsAuthenticated],
+    )
     def like_toggle(self, request, pk=None):
         """Endpoint for adding and removing likes to specific posts."""
 
@@ -141,7 +171,9 @@ class PostViewSet(
         else:
             Like.objects.create(user=user, post=post)
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+        return HttpResponseRedirect(
+            request.META.get("HTTP_REFERER", post.get_absolute_url())
+        )
 
     @action(
         methods=["POST"],
@@ -161,29 +193,33 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(methods=["GET"], detail=False, url_path="liked_posts")
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="liked_posts",
+        permission_classes=[IsAuthenticated],
+    )
     def liked_posts(self, request):
         """Endpoint for getting the list of posts liked by the logged-in user."""
 
         user = request.user
 
+        posts = self.get_annotated_posts_list()
         posts = (
-            Post.objects.filter(likes__user=user)
+            posts.filter(likes__user=user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
-            .annotate(
-                num_likes=Count("likes", distinct=True),
-                num_comments=Count("comments", distinct=True),
-                has_like_from_user=Exists(
-                    Like.objects.filter(user=user, post=OuterRef("pk"))
-                ),
-            )
         )
         serializer = self.get_serializer(posts, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=False, url_path="followed_authors_posts")
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="followed_authors_posts",
+        permission_classes=[IsAuthenticated],
+    )
     def followed_authors_posts(self, request):
         """
         Endpoint for getting the list of posts from the authors
@@ -192,23 +228,22 @@ class PostViewSet(
 
         user = self.request.user
 
+        posts = self.get_annotated_posts_list()
         posts = (
-            Post.objects.filter(author__followers__follower=self.request.user)
+            posts.filter(author__followers__follower=user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
-            .annotate(
-                num_likes=Count("likes", distinct=True),
-                num_comments=Count("comments", distinct=True),
-                has_like_from_user=Exists(
-                    Like.objects.filter(user=user, post=OuterRef("pk"))
-                ),
-            )
         )
         serializer = self.get_serializer(posts, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=True, url_path="users_who_liked")
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="users_who_liked",
+        permission_classes=[IsAuthenticated],
+    )
     def users_who_liked(self, request, pk=None):
         """
         Endpoint for getting the list of users who liked the specific post.
@@ -220,13 +255,24 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+        ]
+    )
+    def retrieve(self, request, *args, **kwargs):
+        if request.user and request.user.is_authenticated:
+            return super().retrieve(self, request, *args, **kwargs)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 
 class ImageDeleteView(generics.DestroyAPIView):
     """Endpoint for removing an image from post."""
 
     queryset = PostImage.objects.all()
     serializer_class = PostImageSerializer
-    permission_classes = (IsPostAuthorUser,)
+    permission_classes = (IsAuthenticated, IsPostAuthorUser)
 
 
 class PostImageUploadView(generics.CreateAPIView):
@@ -237,17 +283,33 @@ class PostImageUploadView(generics.CreateAPIView):
     permission_classes = (IsPostAuthorUser,)
 
     def perform_create(self, serializer):
-        serializer.save(post=Post.objects.get(id=self.kwargs.get("pk")))
+        post = Post.objects.get(id=self.kwargs.get("pk"))
+        serializer.save(post=post)
 
     def post(self, request, *args, **kwargs):
-        self.create(request, *args, **kwargs)
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        post = Post.objects.get(id=self.kwargs.get("pk"))
+
+        if request.user and request.user.is_authenticated:
+            if post.author == request.user:
+                self.create(request, *args, **kwargs)
+                return HttpResponseRedirect(
+                    request.META.get("HTTP_REFERER", post.get_absolute_url())
+                )
+
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter("id", OpenApiTypes.INT, OpenApiParameter.PATH)
+    ]
+)
 class PostponedPostViewSet(viewsets.ModelViewSet):
     """Endpoint for creating, updating, retrieving and deleting postponed posts."""
 
-    permission_classes = (IsPostAuthorUser,)
+    permission_classes = (IsAuthenticated, IsPostAuthorUser)
     pagination_class = Pagination
 
     def perform_create(self, serializer):
@@ -274,7 +336,11 @@ class PostponedPostViewSet(viewsets.ModelViewSet):
 
         return PostponedPostDetailSerializer
 
-    @action(detail=True, url_path="publish_now")
+    @action(
+        detail=True,
+        url_path="publish_now",
+        permission_classes=[IsAuthenticated, IsPostAuthorUser],
+    )
     def publish_now(self, request, pk=None):
         post = self.get_object()
 

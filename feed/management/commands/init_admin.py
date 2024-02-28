@@ -19,4 +19,6 @@ class Command(BaseCommand):
             print("Creating superuser")
             User.objects.create_superuser(email=email, password=password)
         else:
-            print("Admin accounts can only be initialized if no Accounts exist")
+            print(
+                "Admin accounts can only be initialized if no Accounts exist"
+            )
