@@ -82,11 +82,8 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def get_serializer_class(self):
-        if self.action == "list":
+        if self.action in ["list", "followers", "followings"]:
             return UserInfoListSerializer
-
-        if self.action == "my_profile":
-            return ManageUserProfileSerializer
 
         return UserInfoSerializer
 
@@ -192,7 +189,7 @@ class ManageUserProfileViewSet(
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, url_path="delete_profile_image")
+    @action(methods=["DELETE"], detail=True, url_path="delete_profile_image")
     def delete_image(self, request, pk=None):
         """Endpoint where logged-in user can delete their own profile image."""
 
