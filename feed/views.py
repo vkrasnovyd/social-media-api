@@ -171,7 +171,9 @@ class PostViewSet(
         else:
             Like.objects.create(user=user, post=post)
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+        return HttpResponseRedirect(
+            request.META.get("HTTP_REFERER", post.get_absolute_url())
+        )
 
     @action(
         methods=["POST"],
@@ -290,7 +292,9 @@ class PostImageUploadView(generics.CreateAPIView):
         if request.user and request.user.is_authenticated:
             if post.author == request.user:
                 self.create(request, *args, **kwargs)
-                return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+                return HttpResponseRedirect(
+                    request.META.get("HTTP_REFERER", post.get_absolute_url())
+                )
 
             return Response(status=status.HTTP_403_FORBIDDEN)
 

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count, Prefetch, Exists, OuterRef
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     extend_schema,
@@ -143,7 +144,9 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
                 follower=active_user, following=retrieved_user
             )
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+        return HttpResponseRedirect(
+            request.META.get("HTTP_REFERER", retrieved_user.get_absolute_url())
+        )
 
     @extend_schema(
         parameters=[
@@ -196,7 +199,9 @@ class ManageUserProfileViewSet(
         user.profile_image = None
         user.save()
 
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        return HttpResponseRedirect(
+            request.META.get("HTTP_REFERER", reverse("user:manage-detail"))
+        )
 
     @action(methods=["POST"], detail=True, url_path="change_password")
     def change_password(self, request):
