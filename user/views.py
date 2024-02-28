@@ -163,7 +163,6 @@ class ManageUserProfileViewSet(
 
     queryset = get_user_model().objects.all()
     permission_classes = (IsAuthenticated,)
-    pagination_class = Pagination
 
     def get_object(self):
         return self.request.user
