@@ -281,7 +281,8 @@ class PostImageUploadView(generics.CreateAPIView):
     permission_classes = (IsPostAuthorUser,)
 
     def perform_create(self, serializer):
-        serializer.save(post=Post.objects.get(id=self.kwargs.get("pk")))
+        post = Post.objects.get(id=self.kwargs.get("pk"))
+        serializer.save(post=post)
 
     def post(self, request, *args, **kwargs):
         post = Post.objects.get(id=self.kwargs.get("pk"))
