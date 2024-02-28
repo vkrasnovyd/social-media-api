@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Prefetch, Exists, OuterRef
+from django.db.models import Count, Prefetch, Exists, OuterRef, QuerySet
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
@@ -139,7 +139,19 @@ class PostViewSet(
 
         return PostSerializer
 
-    @action(detail=True, url_path="like_toggle")
+    def get_annotated_posts_list(self) -> QuerySet[Post]:
+        """Annotates queryset for endpoints with post list."""
+        posts = Post.objects.annotate(
+            num_likes=Count("likes", distinct=True),
+            has_like_from_user=Exists(
+                Like.objects.filter(
+                    user=self.request.user, post=OuterRef("pk")
+                )
+            ),
+            num_comments=Count("comments", distinct=True),
+        )
+        return posts
+
     @action(
         detail=True,
         url_path="like_toggle",
@@ -190,17 +202,11 @@ class PostViewSet(
 
         user = request.user
 
+        posts = self.get_annotated_posts_list()
         posts = (
-            Post.objects.filter(likes__user=user)
+            posts.filter(likes__user=user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
-            .annotate(
-                num_likes=Count("likes", distinct=True),
-                num_comments=Count("comments", distinct=True),
-                has_like_from_user=Exists(
-                    Like.objects.filter(user=user, post=OuterRef("pk"))
-                ),
-            )
         )
         serializer = self.get_serializer(posts, many=True)
 
@@ -220,17 +226,11 @@ class PostViewSet(
 
         user = self.request.user
 
+        posts = self.get_annotated_posts_list()
         posts = (
-            Post.objects.filter(author__followers__follower=self.request.user)
+            posts.filter(author__followers__follower=user)
             .select_related("author")
             .prefetch_related("hashtags", "likes", "comments", "images")
-            .annotate(
-                num_likes=Count("likes", distinct=True),
-                num_comments=Count("comments", distinct=True),
-                has_like_from_user=Exists(
-                    Like.objects.filter(user=user, post=OuterRef("pk"))
-                ),
-            )
         )
         serializer = self.get_serializer(posts, many=True)
 

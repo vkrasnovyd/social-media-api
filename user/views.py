@@ -45,6 +45,7 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
 
         if self.action == "retrieve":
             user = self.request.user
+            retrieved_user = self.kwargs.get("pk")
 
             posts = Prefetch(
                 "posts",
@@ -61,7 +62,12 @@ class UserInfoViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.prefetch_related(posts)
 
             queryset = queryset.annotate(
-                num_followers=Count("followers", distinct=True)
+                is_followed_by_user=Exists(
+                    Follow.objects.filter(
+                        follower=user, following=retrieved_user
+                    )
+                ),
+                num_followers=Count("followers", distinct=True),
             ).annotate(num_followings=Count("followings", distinct=True))
 
         if self.action == "list":
