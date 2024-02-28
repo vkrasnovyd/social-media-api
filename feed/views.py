@@ -140,6 +140,11 @@ class PostViewSet(
         return PostSerializer
 
     @action(detail=True, url_path="like_toggle")
+    @action(
+        detail=True,
+        url_path="like_toggle",
+        permission_classes=[IsAuthenticated],
+    )
     def like_toggle(self, request, pk=None):
         """Endpoint for adding and removing likes to specific posts."""
 
@@ -174,7 +179,12 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(methods=["GET"], detail=False, url_path="liked_posts")
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="liked_posts",
+        permission_classes=[IsAuthenticated],
+    )
     def liked_posts(self, request):
         """Endpoint for getting the list of posts liked by the logged-in user."""
 
@@ -196,7 +206,12 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=False, url_path="followed_authors_posts")
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="followed_authors_posts",
+        permission_classes=[IsAuthenticated],
+    )
     def followed_authors_posts(self, request):
         """
         Endpoint for getting the list of posts from the authors
@@ -221,7 +236,12 @@ class PostViewSet(
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=True, url_path="users_who_liked")
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="users_who_liked",
+        permission_classes=[IsAuthenticated],
+    )
     def users_who_liked(self, request, pk=None):
         """
         Endpoint for getting the list of users who liked the specific post.
@@ -239,7 +259,10 @@ class PostViewSet(
         ]
     )
     def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(self, request, *args, **kwargs)
+        if request.user and request.user.is_authenticated:
+            return super().retrieve(self, request, *args, **kwargs)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 class ImageDeleteView(generics.DestroyAPIView):
@@ -247,7 +270,7 @@ class ImageDeleteView(generics.DestroyAPIView):
 
     queryset = PostImage.objects.all()
     serializer_class = PostImageSerializer
-    permission_classes = (IsPostAuthorUser,)
+    permission_classes = (IsAuthenticated, IsPostAuthorUser)
 
 
 class PostImageUploadView(generics.CreateAPIView):
@@ -261,8 +284,16 @@ class PostImageUploadView(generics.CreateAPIView):
         serializer.save(post=Post.objects.get(id=self.kwargs.get("pk")))
 
     def post(self, request, *args, **kwargs):
-        self.create(request, *args, **kwargs)
-        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+        post = Post.objects.get(id=self.kwargs.get("pk"))
+
+        if request.user and request.user.is_authenticated:
+            if post.author == request.user:
+                self.create(request, *args, **kwargs)
+                return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 @extend_schema(
@@ -273,7 +304,7 @@ class PostImageUploadView(generics.CreateAPIView):
 class PostponedPostViewSet(viewsets.ModelViewSet):
     """Endpoint for creating, updating, retrieving and deleting postponed posts."""
 
-    permission_classes = (IsPostAuthorUser,)
+    permission_classes = (IsAuthenticated, IsPostAuthorUser)
     pagination_class = Pagination
 
     def perform_create(self, serializer):
@@ -300,7 +331,11 @@ class PostponedPostViewSet(viewsets.ModelViewSet):
 
         return PostponedPostDetailSerializer
 
-    @action(detail=True, url_path="publish_now")
+    @action(
+        detail=True,
+        url_path="publish_now",
+        permission_classes=[IsAuthenticated, IsPostAuthorUser],
+    )
     def publish_now(self, request, pk=None):
         post = self.get_object()
 
